@@ -82,6 +82,30 @@ def ik(pose, side):
         print("INVALID POSE - No Valid Joint Solution Found.")
         return 0
 
+def ik_joint(pose, side):
+    ns = "ExternalTools/right/PositionKinematicsNode/IKService"
+    if side == "left": ns = "ExternalTools/left/PositionKinematicsNode/IKService"
+    iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
+    ikreq = SolvePositionIKRequest()
+    hdr = Header(stamp=rospy.Time.now(), frame_id='base')
+    ikreq.pose_stamp.append(pose)
+
+    try:
+        rospy.wait_for_service(ns, 5.0)
+        resp = iksvc(ikreq)
+    except (rospy.ServiceException, rospy.ROSException), e:
+        rospy.logerr("Service call failed: %s" % (e,))
+        return {}
+
+    if (resp.isValid[0]):
+
+        limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
+        return limb_joints
+
+    else:
+        print("INVALID POSE - No Valid Joint Solution Found.")
+        return {}
+
 def ik_pykdl(arm, kin, pose, side = "right"):
     position = pose.pose.position
     orientation = pose.pose.orientation
@@ -115,6 +139,38 @@ def ik_pykdl(arm, kin, pose, side = "right"):
     else:
         return False
 
+def ik_pykdl_joint(kin, pose, side = "right"):
+    position = pose.pose.position
+    orientation = pose.pose.orientation
+    pos = [position.x,position.y,position.z]
+    rot = [orientation.x,orientation.y,orientation.z,orientation.w]
+    joint_angles = kin.inverse_kinematics(pos,rot)
+    if joint_angles:
+        if side == "right":
+            cmd = {
+                'right_s0': joint_angles[0],
+                'right_s1': joint_angles[1],
+                'right_e0': joint_angles[2],
+                'right_e1': joint_angles[3],
+                'right_w0': joint_angles[4],
+                'right_w1': joint_angles[5],
+                'right_w2': joint_angles[6],
+            }
+        else:
+            cmd = {
+                'left_s0': joint_angles[0],
+                'left_s1': joint_angles[1],
+                'left_e0': joint_angles[2],
+                'left_e1': joint_angles[3],
+                'left_w0': joint_angles[4],
+                'left_w1': joint_angles[5],
+                'left_w2': joint_angles[6],
+            }
+
+        return cmd
+    else:
+        return {}
+
 def move_to_pose(left_pose = None, right_pose = None, timeout = 2.0):
     start = rospy.get_time()
     left_result = 1
@@ -124,7 +180,7 @@ def move_to_pose(left_pose = None, right_pose = None, timeout = 2.0):
         if right_pose != None : right_result = ik(right_pose, "right")
     return (right_result == 1 and left_result == 1)
 
-def ik_move(side, target_dx = None, target_dy = None, target_dz = None, x = None, y = None, z = None, timeout= 5,speed = 1.0):
+def ik_move(side, pub, jacob, control_mode = 'position', target_dx = None, target_dy = None, target_dz = None, x = None, y = None, z = None, timeout= 5,speed = 1.0):
 
     if side == "right": arm = Limb("right")
     else: arm = Limb("left")
@@ -149,8 +205,8 @@ def ik_move(side, target_dx = None, target_dy = None, target_dz = None, x = None
     solution_found = 1
 
     start = rospy.get_time()
-    while (abs(dx) > 0.01 or abs(dy) > 0.01 or abs(dz) > 0.01) and solution_found == 1 and (rospy.get_time() - start) < timeout:
-    
+    while (abs(dz) > 0.01) and solution_found == 1 and (rospy.get_time() - start) < timeout and not rospy.is_shutdown():
+    # while (abs(dx) > 0.01 or abs(dy) > 0.01 or abs(dz) > 0.01) and solution_found == 1 and (rospy.get_time() - start) < timeout:
     #while (abs(dx) > 0.01 or abs(dy) > 0.01 or abs(dz) > 0.01) and i < 5000:
         
         current_pose = get_current_pose(arm,initial_pose)
@@ -167,11 +223,31 @@ def ik_move(side, target_dx = None, target_dy = None, target_dz = None, x = None
         vy = dy*speed
         vz = dz*speed
         #print dx, dy, dz
-        new_pose = update_current_pose(current_pose,vx,vy,vz)
-        solution_found = ik(new_pose,side)
+        p = Point()
+        p.x = vx * 1e6
+        p.y = vy * 1e6
+        p.z = vz * 1e6
+        pub.publish(p)
+
+        if control_mode is 'velocity': velocity_control(arm, jacob, vx, vy, vz)
+        else: position_control(side, current_pose, vx, vy, vz)
+        
     return solution_found
 
+def velocity_control(arm, jacob, vx, vy, vz):
+    v_end = np.asarray([vx*0.0,vy*1.2,vz*0.0,0.0,0.0,0.0],np.float32)
+    v_joint = np.dot(jacob, v_end)
+    cmd = {}
+    for idx, name in enumerate(arm.joint_names()):
+        v = v_joint.item(idx)
+        cmd[name] = v 
+    # arm.set_joint_velocities(cmd)
+    cmd = {'left_w0': 0.0012733238947391513, 'left_w1': -0.0002816292849537642, 'left_w2': -0.0007010771561622622, 'left_e0': -0.0020298280910253535, 'left_e1': -0.26769762351751303, 'left_s0': 1.1543954429705146, 'left_s1': 0.001086070380806923}
+    arm.set_joint_torques(cmd)
 
+def position_control(side, current_pose, vx, vy, vz):
+    new_pose = update_current_pose(current_pose,vx,vy,vz)
+    solution_found = ik(new_pose,side)
 
 def ik_move_one_step(initial_pose, predict_pose, hdr, arm, kin, target_dx = None, target_dy = None, target_dz = None, side = "right"):
 
