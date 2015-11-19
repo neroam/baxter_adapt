@@ -48,6 +48,8 @@ from baxter_examples.cfg import (
 )
 from baxter_interface import CHECK_VERSION
 
+from baxter_pykdl import baxter_kinematics
+
 from execution import *
 
 
@@ -70,7 +72,10 @@ class JointSprings(object):
         self._missed_cmds = 20.0  # Missed cycles before triggering timeout
 
         # create our limb instance
+        self._side = limb
         self._limb = baxter_interface.Limb(limb)
+        self._kin = baxter_kinematics(limb)
+        self._jacob = self._kin.jacobian_pseudo_inverse()
 
         # initialize parameters
         self._springs = dict()
@@ -80,6 +85,7 @@ class JointSprings(object):
         # create cuff disable publisher
         cuff_ns = 'robot/limb/' + limb + '/suppress_cuff_interaction'
         self._pub_cuff_disable = rospy.Publisher(cuff_ns, Empty, queue_size=1)
+        self.pub = rospy.Publisher('position_error', Point, queue_size=10)
 
         # verify robot is enabled
         print("Getting robot state... ")
@@ -96,7 +102,7 @@ class JointSprings(object):
             self._damping[joint] = self._dyn.config[joint[-2:] +
                                                     '_damping_coefficient']
 
-    def _update_forces(self):
+    def _update_forces(self, initial_pose, target_x, target_y, target_z):
         """
         Calculates the current angular difference between the start position
         and the current joint positions applying the joint torque spring forces
@@ -111,14 +117,35 @@ class JointSprings(object):
         # create our command dict
         cmd = dict()
         # record current angles/velocities
-        cur_pos = self._limb.joint_angles()
+        current_pose = get_current_pose(self._limb, initial_pose)
+        current_joints = self._limb.joint_angles()
+        current_x = current_pose.pose.position.x
+        current_y = current_pose.pose.position.y
+        current_z = current_pose.pose.position.z
+        dx = target_x - current_x
+        dy = target_y - current_y
+        dz = target_z - current_z
+        #dz = min(-0.05, dz)
+        target_pose = update_current_pose(current_pose, dx, dy, dz)
+        # target_joints = ik_joint(target_pose, self._side)
+        target_joints = ik_pykdl_joint(self._kin, target_pose, side = self._side)
         cur_vel = self._limb.joint_velocities()
+        p = Point()
+        p.x = dx * 1e6
+        p.y = dy * 1e6
+        p.z = dz * 1e6
+        self.pub.publish(p)
         # calculate current forces
-        for joint in self._start_angles.keys():
-            cmd[joint] = 0.0
-        rospy.loginfo("Test with zero torques")
-        # command new joint torques
-        self._limb.set_joint_torques(cmd)
+        if len(current_joints) is not 0 and len(target_joints) is not 0:
+            for joint in self._start_angles.keys():
+                # spring portion
+                cmd[joint] = self._springs[joint] * (target_joints[joint] -
+                                                       current_joints[joint])
+                # damping portion
+                # cmd[joint] -= self._damping[joint] * cur_vel[joint]
+            # command new joint torques
+            cmd['left_w2'] = 0.0
+            self._limb.set_joint_torques(cmd)
 
     def move_to_neutral(self):
         """
@@ -126,7 +153,7 @@ class JointSprings(object):
         """
         self._limb.move_to_neutral()
 
-    def attach_springs(self):
+    def attach_springs(self, dx = 0, dy = 0, dz = 0.03):
         """
         Switches to joint torque mode and attached joint springs to current
         joint positions.
@@ -142,13 +169,21 @@ class JointSprings(object):
         # will timeout and disable
         self._limb.set_command_timeout((1.0 / self._rate) * self._missed_cmds)
 
+        initial_pose = get_current_pose(self._limb)
+        target_x = initial_pose.pose.position.x + dx
+        target_y = initial_pose.pose.position.y + dy
+        target_z = initial_pose.pose.position.z + dz
+
+
         # loop at specified rate commanding new joint torques
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() and get_current_pose(self._limb).pose.position.z > -0.15:
             if not self._rs.state().enabled:
                 rospy.logerr("Joint torque example failed to meet "
                              "specified control rate timeout.")
                 break
-            self._update_forces()
+            self._update_forces(initial_pose, target_x, target_y, target_z)
+            delta_z = -8e-6 if self._limb.endpoint_effort()['force'].z >= -10 else 0.0
+            target_z += delta_z
             control_rate.sleep()
 
     def clean_shutdown(self):
@@ -191,7 +226,23 @@ def main():
     js = JointSprings(args.limb, dynamic_cfg_srv)
     # register shutdown callback
     rospy.on_shutdown(js.clean_shutdown)
-    js.move_to_neutral()
+    # js.move_to_neutral()
+    joint_states = {
+
+        'observe':{
+            'left_e0': 0.81952,
+            'left_e1': 1.63253,
+            'left_s0': -0.8402,
+            'left_s1': -0.7159,
+            'left_w0': -0.6810,
+            'left_w1': 0.96794,
+            'left_w2': 0.89929,
+        }
+    }
+
+
+    #set_joints(target_angles_left = joint_states['observe'])
+    rospy.sleep(0.1)
     js.attach_springs()
 
 def test():
@@ -213,8 +264,10 @@ def test():
 
     set_joints(target_angles_left = joint_states['observe'])
     rospy.sleep(1)
-    ik_move(side = 'left', target_dz = -0.2, speed = 0.1, timeout = 26)
+    pub = rospy.Publisher('position_error', Point, queue_size=10)
+    jacob = baxter_kinematics('left').jacobian_pseudo_inverse()
+    ik_move('left', pub, jacob, control_mode = 'velocity', target_dz = -0.2, speed = 1.0, timeout = 20)
 
 
 if __name__ == "__main__":
-    test()
+    main()
