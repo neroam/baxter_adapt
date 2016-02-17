@@ -286,8 +286,13 @@ def listToPose(list):
 def get_current_pose(arm,initial_pose = None):
     
     hdr = Header(stamp=rospy.Time.now(), frame_id='base')
-    ep_position = arm.endpoint_pose()['position']
-    ep_orientation = arm.endpoint_pose()['orientation']
+    pose = arm.endpoint_pose()
+    while len(pose) == 0:
+        print "Error"
+        rospy.sleep(1)
+        pose = arm.endpoint_pose()
+    ep_position = pose['position']
+    ep_orientation = pose['orientation']
 
     if initial_pose == None:
         

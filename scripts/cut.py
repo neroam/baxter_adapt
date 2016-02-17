@@ -52,6 +52,12 @@ from baxter_pykdl import baxter_kinematics
 
 from execution import *
 
+import cma
+
+import numpy as np
+
+import sys
+
 
 class JointSprings(object):
     """
@@ -70,12 +76,38 @@ class JointSprings(object):
         # control parameters
         self._rate = 1000.0  # Hz
         self._missed_cmds = 20.0  # Missed cycles before triggering timeout
+        self._z_cut_through = 0.020 # 0.0328
+
+        # parameters for calculating the accelaration
+        self._last_time = 0
+        self._last_v = 0
+
+        # score and time
+        self._score = 0
+        self._time_consumption = 0
+
+        # result
+        self.result = []
 
         # create our limb instance
         self._side = limb
         self._limb = baxter_interface.Limb(limb)
         self._kin = baxter_kinematics(limb)
         self._jacob = self._kin.jacobian_pseudo_inverse()
+
+        self.joint_states = {
+
+            'observe':{
+                'left_e0': -0.662,
+                'left_e1': 1.65,
+                'left_s0': 0.0423,
+                'left_s1': -0.878,
+                'left_w0': 0.53,
+                'left_w1': 1.06,
+                'left_w2': -0.0706,
+            }
+        } 
+        
 
         # initialize parameters
         self._springs = dict()
@@ -94,6 +126,17 @@ class JointSprings(object):
         print("Enabling robot... ")
         self._rs.enable()
         print("Running. Ctrl-c to quit")
+
+    def initialize(self):
+        self._score = 0
+        self._time_consumption = 0
+        self._last_time = 0
+        set_joints(target_angles_left = self.joint_states['observe'])
+        ik_move('left', self.pub, self._jacob, control_mode = 'position', target_dz = -0.06, speed = 0.2, timeout = 20)
+        rospy.sleep(5)
+
+    def recover(self):
+        ik_move('left', self.pub, self._jacob, control_mode = 'position', target_dz = 0.2, speed = 0.5, timeout = 20)
 
     def _update_parameters(self):
         for joint in self._limb.joint_names():
@@ -125,6 +168,7 @@ class JointSprings(object):
         dx = target_x - current_x
         dy = target_y - current_y
         dz = target_z - current_z
+
         #dz = min(-0.05, dz)
         target_pose = update_current_pose(current_pose, dx, dy, dz)
         # target_joints = ik_joint(target_pose, self._side)
@@ -149,11 +193,11 @@ class JointSprings(object):
 
     def move_to_neutral(self):
         """
-        Moves the limb to neutral location.
+        Moves the limb to neutral location.-
         """
         self._limb.move_to_neutral()
 
-    def attach_springs(self, dx = 0, dy = 0, dz = 0.03):
+    def attach_springs(self, theta, dx = 0.0, dy = 0.0, dz = 0.03): # dz = 0.03
         """
         Switches to joint torque mode and attached joint springs to current
         joint positions.
@@ -174,17 +218,41 @@ class JointSprings(object):
         target_y = initial_pose.pose.position.y + dy
         target_z = initial_pose.pose.position.z + dz
 
+        force_max = -30
+        
 
         # loop at specified rate commanding new joint torques
-        while not rospy.is_shutdown() and get_current_pose(self._limb).pose.position.z > -0.15:
+        currnet_z = get_current_pose(self._limb).pose.position.z
+        while not rospy.is_shutdown() and currnet_z > self._z_cut_through and currnet_z < 0.1:
             if not self._rs.state().enabled:
                 rospy.logerr("Joint torque example failed to meet "
                              "specified control rate timeout.")
                 break
             self._update_forces(initial_pose, target_x, target_y, target_z)
-            delta_z = -8e-6 if self._limb.endpoint_effort()['force'].z >= -10 else 0.0
+            delta_x = 0.0
+            delta_z = self.generate_delta_z(theta)
             target_z += delta_z
+            target_x += delta_x
+            currnet_z = get_current_pose(self._limb).pose.position.z
             control_rate.sleep()
+        if currnet_z >= 0.1: self._score = -100
+        self.output()
+
+    def generate_delta_z(self, theta):
+        x = self._limb.endpoint_pose()['position'].z - self._z_cut_through
+        v = self._limb.endpoint_velocity()['linear'].z
+        t = rospy.get_time()
+        dt =  0 if self._last_time == 0 else t - self._last_time
+        a = 0.0 if self._last_time == 0 else (v - self._last_v) / dt
+
+        # update last_time and last_v
+        self._last_v = v
+        self._last_time = t
+        
+        # update score and time
+        self._score += -abs(self._limb.endpoint_effort()['force'].z) * abs(v) * dt * 100
+        self._time_consumption += dt
+        return theta[0] * x + theta[1] * v + theta[2] * a + theta[3]
 
     def clean_shutdown(self):
         """
@@ -196,54 +264,44 @@ class JointSprings(object):
             print("Disabling robot...")
             self._rs.disable()
 
+    def output(self):
+        print "Fianl socre: ", self._score
+        print "Total time: ", self._time_consumption
+
+    def accept(self, theta):
+        x = np.asarray([theta, self._score, self._time_consumption])
+        np.save('/home/aecins/output', x)
+
+
 
 def main():
-    """RSDK Joint Torque Example: Joint Springs
 
-    Moves the specified limb to a neutral location and enters
-    torque control mode, attaching virtual springs (Hooke's Law)
-    to each joint maintaining the start position.
 
-    Run this example on the specified limb and interact by
-    grabbing, pushing, and rotating each joint to feel the torques
-    applied that represent the virtual springs attached.
-    You can adjust the spring constant and damping coefficient
-    for each joint using dynamic_reconfigure.
-    """
-    arg_fmt = argparse.RawDescriptionHelpFormatter
-    parser = argparse.ArgumentParser(formatter_class=arg_fmt,
-                                     description=main.__doc__)
-    parser.add_argument(
-        '-l', '--limb', dest='limb', required=True, choices=['left', 'right'],
-        help='limb on which to attach joint springs'
-    )
-    args = parser.parse_args(rospy.myargv()[1:])
+    rospy.init_node("robot_cut")
+    # theta = []
+    # for s in [sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]]:
+    #     theta.append(float(s))
+    theta = [0, 0, 0, -0.000209 ]
 
-    print("Initializing node... ")
-    rospy.init_node("rsdk_joint_torque_springs_%s" % (args.limb,))
+    
     dynamic_cfg_srv = Server(JointSpringsExampleConfig,
                              lambda config, level: config)
-    js = JointSprings(args.limb, dynamic_cfg_srv)
-    # register shutdown callback
-    rospy.on_shutdown(js.clean_shutdown)
-    # js.move_to_neutral()
-    joint_states = {
+    cut(theta, dynamic_cfg_srv)
+    
 
-        'observe':{
-            'left_e0': 0.81952,
-            'left_e1': 1.63253,
-            'left_s0': -0.8402,
-            'left_s1': -0.7159,
-            'left_w0': -0.6810,
-            'left_w1': 0.96794,
-            'left_w2': 0.89929,
-        }
-    }
+def cut(theta, dsv):
+    
+    js = JointSprings('left', dsv)
+    js.initialize()
+    print "Executed theta: ", theta
+    js.attach_springs(theta)
+    js.recover()
+    js.accept(theta)
+    
 
 
-    #set_joints(target_angles_left = joint_states['observe'])
-    rospy.sleep(0.1)
-    js.attach_springs()
+    
+    
 
 def test():
     rospy.init_node('cut_test', anonymous=True)
@@ -266,8 +324,11 @@ def test():
     rospy.sleep(1)
     pub = rospy.Publisher('position_error', Point, queue_size=10)
     jacob = baxter_kinematics('left').jacobian_pseudo_inverse()
-    ik_move('left', pub, jacob, control_mode = 'velocity', target_dz = -0.2, speed = 1.0, timeout = 20)
+    for i in range(3):
+        ik_move('left', pub, jacob, control_mode = 'position', target_dz = -0.2, speed = 1.0, timeout = 20)
+        ik_move('left', pub, jacob, control_mode = 'position', target_dz = 0.2, speed = 1.0, timeout = 20)
 
 
 if __name__ == "__main__":
     main()
+    # test()
