@@ -14,18 +14,18 @@ def set_joints( target_angles_right = None, target_angles_left = None,timeout= 4
 
     right = Limb("right")
     left = Limb("left")
-    
+
     if target_angles_right == None:
         reach_right = True
     else:
         reach_right = False
-    
+
 
     if target_angles_left == None:
         reach_left = True
     else:
         reach_left = False
-    
+
     time = 0
 
     while not reach_right or not reach_left:
@@ -35,7 +35,7 @@ def set_joints( target_angles_right = None, target_angles_left = None,timeout= 4
             current_angles_right = right.joint_angles()
             current_angles_left = left.joint_angles()
 
-            
+
             if reach_right == False:
                 for k, v in current_angles_right.iteritems():
                     if abs(target_angles_right[k] - v) > 0.01:
@@ -189,7 +189,7 @@ def ik_move(side, pub, jacob, control_mode = 'position', target_dx = None, targe
     target_x = initial_pose.pose.position.x
     target_y = initial_pose.pose.position.y
     target_z = initial_pose.pose.position.z
-    
+
     if target_dx != None: target_x += target_dx
     if target_dy != None: target_y += target_dy
     if target_dz != None: target_z += target_dz
@@ -205,10 +205,10 @@ def ik_move(side, pub, jacob, control_mode = 'position', target_dx = None, targe
     solution_found = 1
 
     start = rospy.get_time()
-    while (abs(dz) > 0.01) and solution_found == 1 and (rospy.get_time() - start) < timeout and not rospy.is_shutdown():
-    # while (abs(dx) > 0.01 or abs(dy) > 0.01 or abs(dz) > 0.01) and solution_found == 1 and (rospy.get_time() - start) < timeout:
+    #while (abs(dz) > 0.01) and solution_found == 1 and (rospy.get_time() - start) < timeout and not rospy.is_shutdown():
+    while (abs(dx) > 0.01 or abs(dy) > 0.01 or abs(dz) > 0.01) and solution_found == 1 and (rospy.get_time() - start) < timeout:
     #while (abs(dx) > 0.01 or abs(dy) > 0.01 or abs(dz) > 0.01) and i < 5000:
-        
+
         current_pose = get_current_pose(arm,initial_pose)
         current_x = current_pose.pose.position.x
         current_y = current_pose.pose.position.y
@@ -231,7 +231,7 @@ def ik_move(side, pub, jacob, control_mode = 'position', target_dx = None, targe
 
         if control_mode is 'velocity': velocity_control(arm, jacob, vx, vy, vz)
         else: position_control(side, current_pose, vx, vy, vz)
-        
+
     return solution_found
 
 def velocity_control(arm, jacob, vx, vy, vz):
@@ -240,7 +240,7 @@ def velocity_control(arm, jacob, vx, vy, vz):
     cmd = {}
     for idx, name in enumerate(arm.joint_names()):
         v = v_joint.item(idx)
-        cmd[name] = v 
+        cmd[name] = v
     # arm.set_joint_velocities(cmd)
     cmd = {'left_w0': 0.0012733238947391513, 'left_w1': -0.0002816292849537642, 'left_w2': -0.0007010771561622622, 'left_e0': -0.0020298280910253535, 'left_e1': -0.26769762351751303, 'left_s0': 1.1543954429705146, 'left_s1': 0.001086070380806923}
     arm.set_joint_torques(cmd)
@@ -253,15 +253,15 @@ def ik_move_one_step(initial_pose, predict_pose, hdr, arm, kin, target_dx = None
 
     current_pose = get_current_pose(arm,initial_pose)
 
-    if target_dx == None: 
+    if target_dx == None:
         target_dx = initial_pose.pose.position.x - current_pose.pose.position.x
-    else: 
+    else:
         target_dx = target_dx + predict_pose.pose.position.x - current_pose.pose.position.x
-    if target_dy == None: 
+    if target_dy == None:
         target_dy = initial_pose.pose.position.y - current_pose.pose.position.y
-    else: 
+    else:
         target_dy = target_dy + predict_pose.pose.position.y - current_pose.pose.position.y
-    if target_dz == None: 
+    if target_dz == None:
         target_dz = initial_pose.pose.position.z - current_pose.pose.position.z
     else:
         target_dz = target_dz + predict_pose.pose.position.z - current_pose.pose.position.z
@@ -284,7 +284,7 @@ def listToPose(list):
     return pose
 
 def get_current_pose(arm,initial_pose = None):
-    
+
     hdr = Header(stamp=rospy.Time.now(), frame_id='base')
     pose = arm.endpoint_pose()
     while len(pose) == 0:
@@ -295,7 +295,7 @@ def get_current_pose(arm,initial_pose = None):
     ep_orientation = pose['orientation']
 
     if initial_pose == None:
-        
+
         current_pose = PoseStamped(
                     header=hdr,
                     pose=Pose(

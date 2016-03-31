@@ -12,7 +12,10 @@ launch.start()
 #coefs = [-20e-4,20e-5,-10e-6,-100e-6]
 coefs = [10e-4,10e-5,10e-6,100e-6]
 final_result = []
-es = cma.CMAEvolutionStrategy([0,0,0,0], 4)
+# es = cma.CMAEvolutionStrategy([0,0,0,0], 4)
+es = cma.CMAEvolutionStrategy([-3,0.9,-4,-2], 4)
+# [-0.0003297, 9.12e-6, -3.9558e-5, -0.000209 ]
+
 
 while not es.stop():
 	evals = []

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>baxter_cut</name>
+  <name>baxter_adapt</name>
   <version>0.0.0</version>
-  <description>The baxter_cut package</description>
+  <description>The baxter_adapt package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
