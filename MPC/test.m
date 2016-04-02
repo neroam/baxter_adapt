@@ -1,6 +1,6 @@
 close all;
 
-simulation_3D = 0;
+simulation_3D = 1;
 
 %% Offline Learned trajectory
 refTraj = y_predProMPsMat';
