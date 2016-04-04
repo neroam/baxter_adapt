@@ -8,6 +8,13 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  rospack
+  baxter_core_msgs
+  baxter_gazebo
+  baxter_interface
+  baxter_tools
+  gazebo_ros
+  gazebo_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -79,12 +86,20 @@ find_package(catkin REQUIRED COMPONENTS
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES baxter_cut
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
+  CATKIN_DEPENDS
+  rospy
+  rospack
+  baxter_core_msgs
+  baxter_gazebo
+  baxter_interface
+  baxter_tools
+  baxter_tools
+  gazebo_ros
+  gazebo_msgs
 )
+
 
 ###########
 ## Build ##
@@ -117,6 +132,17 @@ include_directories(
 #############
 ## Install ##
 #############
+
+install(PROGRAMS
+   scripts/perform.py
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+foreach(dir launch models)
+   install(DIRECTORY ${dir}/
+      DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
+endforeach(dir)
+
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html

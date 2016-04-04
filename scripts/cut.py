@@ -52,7 +52,7 @@ from baxter_pykdl import baxter_kinematics
 
 from execution import *
 
-import cma
+#import cma
 
 import numpy as np
 

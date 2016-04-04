@@ -34,22 +34,24 @@ import argparse
 import sys
 
 import rospy
+import copy
 
 import baxter_interface
 from baxter_interface import CHECK_VERSION
 
-from baxter_pykdl import baxter_kinematics
+from executor import Executor
 
-from execution import *
-
-import numpy as np
+from geometry_msgs.msg import (
+    Pose,
+    Point,
+    Quaternion,
+)
 
 def try_float(x):
     try:
         return float(x)
     except ValueError:
         return None
-
 
 def clean_line(line, names):
     """
@@ -74,44 +76,26 @@ def clean_line(line, names):
 
 
 def map_file(filename, loops=1):
-    """
-    Loops through csv file
-
-    @param filename: the file to play
-    @param loops: number of times to loop
-                  values < 0 mean 'infinite'
-
-    Does not loop indefinitely, but only until the file is read
-    and processed. Reads each line, split up in columns and
-    formats each line into a controller command in the form of
-    name/value pairs. Names come from the column headers
-    first column is the time stamp
-    """
-    left = baxter_interface.Limb('left')
-    right = baxter_interface.Limb('right')
-    grip_left = baxter_interface.Gripper('left', CHECK_VERSION)
-    grip_right = baxter_interface.Gripper('right', CHECK_VERSION)
+    limb = "left"
     rate = rospy.Rate(1000)
+    executor = Executor(limb)
+    overhead_orientation = Quaternion(
+                             x=-0.0249590815779,
+                             y=0.999649402929,
+                             z=0.00737916180073,
+                             w=0.00486450832011)
 
-    if grip_left.error():
-        grip_left.reset()
-    if grip_right.error():
-        grip_right.reset()
-    if (not grip_left.calibrated() and
-        grip_left.type() != 'custom'):
-        grip_left.calibrate()
-    if (not grip_right.calibrated() and
-        grip_right.type() != 'custom'):
-        grip_right.calibrate()
+    start_pose = Pose(
+        position=Point(x=0.7, y=0.15, z=-0.129),
+        orientation=overhead_orientation)
+
+    executor.move_to_pose(start_pose)
+    rospy.sleep(1)
 
     print("Performing Trajectory: %s" % (filename,))
     with open(filename, 'r') as f:
         lines = f.readlines()
     keys = lines[0].rstrip().split(',')
-
-    pub = rospy.Publisher('position_error', Point, queue_size=10)
-    jacob_left = baxter_kinematics('left').jacobian_pseudo_inverse()
-    jacob_right = baxter_kinematics('right').jacobian_pseudo_inverse()
 
     l = 0
     # If specified, repeat the file playback 'loops' number of times
@@ -121,12 +105,25 @@ def map_file(filename, loops=1):
         print("Moving to start position...")
 
         _cmd, lcmd_start, rcmd_start, _raw = clean_line(lines[1], keys)
-        print lcmd_start
-        set_joints(target_angles_left = lcmd_start)
-        set_joints(target_angles_right = rcmd_start)
+        target = copy.deepcopy(start_pose)
+        target.position.x = lcmd_start['left_pos_x']
+        target.position.y = lcmd_start['left_pos_y']
+        target.position.z = lcmd_start['left_pos_z']
+        executor.move_to_pose(target)
         rospy.sleep(1)
 
-        step = 10
+        starting_joint_angles = {'left_w0': lcmd_start['left_w0'],
+                             'left_w1': lcmd_start['left_w1'],
+                             'left_w2': lcmd_start['left_w2'],
+                             'left_e0': lcmd_start['left_e0'],
+                             'left_e1': lcmd_start['left_e1'],
+                             'left_s0': lcmd_start['left_s0'],
+                             'left_s1': lcmd_start['left_s1']}
+
+        executor.move_to_start(starting_joint_angles)
+        target = copy.deepcopy(executor.get_current_pose())
+
+        step = 20
         for i in xrange(1, len(lines)-1, step):
             start_time = rospy.get_time()
             values = lines[i]
@@ -142,16 +139,10 @@ def map_file(filename, loops=1):
                     print("\n Aborting - ROS shutdown")
                     return False
                 if len(lcmd):
-                    print "\nMoving to position (%f, %f, %f)" % (lcmd['left_pos_x'], lcmd['left_pos_y'], lcmd['left_pos_z'])
-                    ik_move('left', pub, jacob_left, control_mode = 'position', x = lcmd['left_pos_x'], y = lcmd['left_pos_y'], z = lcmd['left_pos_z'], speed = 1.0, timeout = 1)
-                if len(rcmd):
-                    right.set_joint_positions(rcmd)
-                if ('left_gripper' in cmd and
-                    grip_left.type() != 'custom'):
-                    grip_left.command_position(cmd['left_gripper'])
-                if ('right_gripper' in cmd and
-                    grip_right.type() != 'custom'):
-                    grip_right.command_position(cmd['right_gripper'])
+                    target.position.x = lcmd['left_pos_x']
+                    target.position.y = lcmd['left_pos_y']
+                    target.position.z = lcmd['left_pos_z']
+                    executor.move_to_pose(target)
                 rate.sleep()
         print
     return True
@@ -190,13 +181,7 @@ Related examples:
 
     def clean_shutdown():
         print("\nExiting example...")
-        #if not init_state:
-        #    print("Disabling robot...")
-        #    rs.disable()
     rospy.on_shutdown(clean_shutdown)
-
-    #print("Enabling robot... ")
-    #rs.enable()
 
     map_file(args.file, args.loops)
 
