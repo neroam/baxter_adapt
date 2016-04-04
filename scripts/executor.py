@@ -42,14 +42,16 @@ class Executor(object):
         print("Enabling robot... ")
         self._rs.enable()
 
-    def move_to_start(self, start_angles=None):
-        print("Moving the {0} arm to start pose...".format(self._limb_name))
-        if not start_angles:
-            start_angles = dict(zip(self._joint_names, [0]*7))
-        self._guarded_move_to_joint_position(start_angles)
-        self.gripper_open()
+    def gripper_open(self):
+        self._gripper.open()
         rospy.sleep(1.0)
-        print("Running. Ctrl-c to quit")
+
+    def gripper_close(self):
+        self._gripper.close()
+        rospy.sleep(1.0)
+
+    def move_to_joint(self, angles):
+        self._guarded_move_to_joint_position(start_angles)
 
     def get_current_pose(self):
         pose = self._limb.endpoint_pose()
@@ -125,3 +127,6 @@ class Executor(object):
     def move_to_pose(self, pose):
         joint_angles = self.ik_request(pose)
         self._guarded_move_to_joint_position(joint_angles)
+
+    #def move_as_trajectory(self, filename):
+
