@@ -69,7 +69,7 @@ class Task(object):
         resp = self._trajsvc(y_start, y_end)
         print resp
 
-        if resp.response == True
+        if resp.response is True:
             # perform the trajectory via Inverse Kinematics
             self._executor.move_as_trajectory(resp.filename)
 
@@ -169,10 +169,10 @@ def main():
     # You may wish to replace these poses with estimates
     # from a perception node.
     block_poses.append(Pose(
-        position=Point(x=0.7, y=0.15, z=-0.129),
+        position=Point(x=0.7, y=0.15, z=-0.029),
         orientation=overhead_orientation))
     block_poses.append(Pose(
-        position=Point(x=0.75, y=0.0, z=-0.129),
+        position=Point(x=0.75, y=0.0, z=-0.029),
         orientation=overhead_orientation))
     # Move to the desired starting angles
     tk.move_to_start(starting_joint_angles)

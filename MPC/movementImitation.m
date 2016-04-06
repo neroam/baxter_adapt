@@ -8,7 +8,7 @@ end
 
 [y_predProMPs, y_predProMPsMat, sigma_starProMPs, y_testMat] = testing(PSI_X, y_start, y_end, wsProMPsPrior,lambdaProMPs, T, DOF);
 
-filename = '../generated/imitationTrajectory';
+filename = [pwd,'/generated/imitationTrajectory'];
 
 writeTrajectory(filename, y_predProMPsMat);
 
