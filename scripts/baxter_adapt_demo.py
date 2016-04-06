@@ -28,6 +28,7 @@ from std_msgs.msg import (
 )
 
 from executor import Executor
+from baxter_adapt.srv import *
 
 class Task(object):
     def __init__(self, limb, hover_distance = 0.15, verbose=True):
@@ -35,6 +36,9 @@ class Task(object):
         self._hover_distance = hover_distance # in meters
         self._verbose = verbose # bool
         self._executor = Executor(limb, verbose)
+        trajsvc = "baxter_adapt/imitation_server"
+        rospy.wait_for_service(trajsvc, 5.0)
+        self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
 
     def move_to_start(self, start_angles=None):
         print("Moving the {0} arm to start pose...".format(self._limb_name))
@@ -57,11 +61,17 @@ class Task(object):
         retract.position.z = retract.position.z + self._hover_distance
         self._executor.move_to_pose(retract)
 
-    def transfer(self):
+    def transfer(self, pose):
         # request Matlab to compute trajectory
+        pose_start = self._executor.get_current_pose()
+        y_start = [pose_start.position.x, pose_start.position.y, pose_start.position.z]
+        y_end = [pose.position.x, pose.position.y, pose.position.z]
+        resp = self._trajsvc(y_start, y_end)
+        print resp
 
-        # perform the trajectory via Inverse Kinematics
-        self._executor.move_as_trajectory("./training/training0")
+        if resp.response == True
+            # perform the trajectory via Inverse Kinematics
+            self._executor.move_as_trajectory(resp.filename)
 
     def pick(self, pose):
         # open the gripper
@@ -73,7 +83,7 @@ class Task(object):
         # close gripper
         self._executor.gripper_close()
         # retract to clear object
-        self._retract()
+        #self._retract()
 
     def place(self, pose):
         # servo above pose
@@ -170,10 +180,10 @@ def main():
     while not rospy.is_shutdown():
         print("\nPicking...")
         tk.pick(block_poses[idx])
-        print("\nTransferring...")
-        tk.transfer()
-        print("\nPlacing...")
         idx = (idx+1) % len(block_poses)
+        print("\nTransferring...")
+        tk.transfer(block_poses[idx])
+        print("\nPlacing...")
         tk.place(block_poses[idx])
     return 0
 

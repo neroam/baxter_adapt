@@ -9,10 +9,10 @@ from baxter_adapt.srv import *
 
 def imitation_client(x, y):
 
-    rospy.wait_for_service('imitation_server')
+    rospy.wait_for_service('baxter_adapt/imitation_server')
 
     try:
-        imitation = rospy.ServiceProxy('imitation_server', Imitation)
+        imitation = rospy.ServiceProxy('baxter_adapt/imitation_server', Imitation)
         print x
         print y
 
