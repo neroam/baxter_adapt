@@ -23,7 +23,7 @@ contexts.refVar = refVar;
 contexts.boarder = [-0.2 1.1];
 contexts.ground = -0.2;
 
-contexts.obstacles = [0.84 0.31, 0]';
+contexts.obstacles = [0.84 0.29, -0.02]';
 
 %% Generate adapted trajectory
 [y_adapted, ~] = generateTraj(contexts, weights, config);

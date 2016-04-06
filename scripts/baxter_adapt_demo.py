@@ -57,10 +57,11 @@ class Task(object):
         retract.position.z = retract.position.z + self._hover_distance
         self._executor.move_to_pose(retract)
 
-    def transfer(self, start_pose, end_pose):
+    def transfer(self):
         # request Matlab to compute trajectory
 
         # perform the trajectory via Inverse Kinematics
+        self._executor.move_as_trajectory("./training/training0")
 
     def pick(self, pose):
         # open the gripper
@@ -169,6 +170,8 @@ def main():
     while not rospy.is_shutdown():
         print("\nPicking...")
         tk.pick(block_poses[idx])
+        print("\nTransferring...")
+        tk.transfer()
         print("\nPlacing...")
         idx = (idx+1) % len(block_poses)
         tk.place(block_poses[idx])

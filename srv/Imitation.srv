@@ -1,0 +1,7 @@
+#request imitation trajectory 
+float64[] y_start
+float64[] y_end
+---
+#response constants
+bool response
+string filename

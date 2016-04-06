@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   baxter_tools
   gazebo_ros
   gazebo_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -58,11 +59,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+ add_service_files(
+   FILES
+   Imitation.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -72,10 +72,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -98,6 +98,7 @@ catkin_package(
   baxter_tools
   gazebo_ros
   gazebo_msgs
+  message_runtime
 )
 
 
@@ -138,11 +139,10 @@ install(PROGRAMS
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-foreach(dir launch models)
+foreach(dir launch models srv)
    install(DIRECTORY ${dir}/
       DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
 endforeach(dir)
-
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
