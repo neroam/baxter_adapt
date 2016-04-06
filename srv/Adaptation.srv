@@ -1,6 +1,7 @@
 #request imitation trajectory 
 geometry_msgs/Point y_start
 geometry_msgs/Point y_end
+geometry_msgs/Point[] obstacles
 ---
 #response constants
 bool response

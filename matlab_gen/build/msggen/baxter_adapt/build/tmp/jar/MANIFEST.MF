@@ -1,12 +1,13 @@
 Manifest-Version: 1.0
-Export-Package: baxter_adapt;version="0.0.0";uses:="org.ros.internal.m
- essage"
+Export-Package: baxter_adapt;version="0.0.0";uses:="geometry_msgs,org.
+ ros.internal.message"
 Bundle-Version: 0.0.0
 Tool: Bnd-2.1.0.20130426-122213
 Bundle-Name: baxter_adapt
-Bnd-LastModified: 1459910140000
+Bnd-LastModified: 1459958111000
 Created-By: 1.7.0_60 (Oracle Corporation)
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: org.ros.rosjava_messages.baxter_adapt
-Import-Package: org.ros.internal.message
+Import-Package: geometry_msgs;version="[1.10,2)",org.ros.internal.mess
+ age
 

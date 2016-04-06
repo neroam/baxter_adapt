@@ -7,7 +7,6 @@ import argparse
 import struct
 import sys
 import copy
-import os
 
 import rospy
 import rospkg
@@ -37,9 +36,9 @@ class Task(object):
         self._hover_distance = hover_distance # in meters
         self._verbose = verbose # bool
         self._executor = Executor(limb, verbose)
-        trajsvc = "baxter_adapt/adaptation_server"
+        trajsvc = "baxter_adapt/imitation_server"
         rospy.wait_for_service(trajsvc, 5.0)
-        self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
+        self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
 
     def move_to_start(self, start_angles=None):
         print("Moving the {0} arm to start pose...".format(self._limb_name))
@@ -62,23 +61,17 @@ class Task(object):
         retract.position.z = retract.position.z + self._hover_distance
         self._executor.move_to_pose(retract)
 
-    def transfer(self, pose, obstacles):
+    def transfer(self, pose):
         # request Matlab to compute trajectory
         pose_start = self._executor.get_current_pose()
         y_start = pose_start.position
         y_end = pose.position
-        resp = self._trajsvc(y_start, y_end, obstacles)
+        resp = self._trajsvc(y_start, y_end)
         print resp
 
-        while os.path.isfile(resp.filename) is False:
-            print "Wait for trajectory generation"
-            rospy.sleep(2.0)
-
-        self._executor.move_as_trajectory(resp.filename)
-
-        #if resp.response is True:
+        if resp.response is True:
             # perform the trajectory via Inverse Kinematics
-            #self._executor.move_as_trajectory(resp.filename)
+            self._executor.move_as_trajectory(resp.filename)
 
     def pick(self, pose):
         # open the gripper
@@ -102,9 +95,55 @@ class Task(object):
         # retract to clear object
         self._retract()
 
+def load_gazebo_models(table_pose=Pose(position=Point(x=1.0, y=0.0, z=0.0)),
+                       table_reference_frame="world",
+                       block_pose=Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
+                       block_reference_frame="world"):
+    # Get Models' Path
+    model_path = rospkg.RosPack().get_path('baxter_sim_examples')+"/models/"
+    # Load Table SDF
+    table_xml = ''
+    with open (model_path + "cafe_table/model.sdf", "r") as table_file:
+        table_xml=table_file.read().replace('\n', '')
+    # Load Block URDF
+    block_xml = ''
+    with open (model_path + "block/model.urdf", "r") as block_file:
+        block_xml=block_file.read().replace('\n', '')
+    # Spawn Table SDF
+    rospy.wait_for_service('/gazebo/spawn_sdf_model')
+    try:
+        spawn_sdf = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
+        resp_sdf = spawn_sdf("cafe_table", table_xml, "/",
+                             table_pose, table_reference_frame)
+    except rospy.ServiceException, e:
+        rospy.logerr("Spawn SDF service call failed: {0}".format(e))
+    # Spawn Block URDF
+    rospy.wait_for_service('/gazebo/spawn_urdf_model')
+    try:
+        spawn_urdf = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
+        resp_urdf = spawn_urdf("block", block_xml, "/",
+                               block_pose, block_reference_frame)
+    except rospy.ServiceException, e:
+        rospy.logerr("Spawn URDF service call failed: {0}".format(e))
+
+def delete_gazebo_models():
+    # This will be called on ROS Exit, deleting Gazebo models
+    # Do not wait for the Gazebo Delete Model service, since
+    # Gazebo should already be running. If the service is not
+    # available since Gazebo has been killed, it is fine to error out
+    try:
+        delete_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
+        resp_delete = delete_model("cafe_table")
+        resp_delete = delete_model("block")
+    except rospy.ServiceException, e:
+        rospy.loginfo("Delete Model service call failed: {0}".format(e))
+
 def main():
 
     rospy.init_node("baxter_adapt_demo")
+
+    load_gazebo_models()
+    rospy.on_shutdown(delete_gazebo_models)
 
     rospy.wait_for_message("/robot/sim/started", Empty)
 
@@ -126,15 +165,16 @@ def main():
                              z=0.00737916180073,
                              w=0.00486450832011)
     block_poses = list()
+    # The Pose of the block in its initial location.
+    # You may wish to replace these poses with estimates
+    # from a perception node.
     block_poses.append(Pose(
         position=Point(x=0.7, y=0.15, z=-0.029),
         orientation=overhead_orientation))
     block_poses.append(Pose(
         position=Point(x=0.75, y=0.0, z=-0.029),
         orientation=overhead_orientation))
-
-    obstacles = [Point(0.8, 0.1, 0)]
-
+    # Move to the desired starting angles
     tk.move_to_start(starting_joint_angles)
     idx = 0
     while not rospy.is_shutdown():
@@ -142,7 +182,7 @@ def main():
         tk.pick(block_poses[idx])
         idx = (idx+1) % len(block_poses)
         print("\nTransferring...")
-        tk.transfer(block_poses[idx], obstacles)
+        tk.transfer(block_poses[idx])
         print("\nPlacing...")
         tk.place(block_poses[idx])
     return 0

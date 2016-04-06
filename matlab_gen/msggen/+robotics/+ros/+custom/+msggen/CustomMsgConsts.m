@@ -6,6 +6,9 @@ classdef CustomMsgConsts
     %   Copyright 2016 The MathWorks, Inc.
     
     properties (Constant)
+        baxter_adapt_Adaptation = 'baxter_adapt/Adaptation'
+        baxter_adapt_AdaptationRequest = 'baxter_adapt/AdaptationRequest'
+        baxter_adapt_AdaptationResponse = 'baxter_adapt/AdaptationResponse'
         baxter_adapt_Imitation = 'baxter_adapt/Imitation'
         baxter_adapt_ImitationRequest = 'baxter_adapt/ImitationRequest'
         baxter_adapt_ImitationResponse = 'baxter_adapt/ImitationResponse'
@@ -18,10 +21,13 @@ classdef CustomMsgConsts
             
             persistent msgList
             if isempty(msgList)
-                msgList = cell(3, 1);
-                msgList{1} = 'baxter_adapt/Imitation';
-                msgList{2} = 'baxter_adapt/ImitationRequest';
-                msgList{3} = 'baxter_adapt/ImitationResponse';
+                msgList = cell(6, 1);
+                msgList{1} = 'baxter_adapt/Adaptation';
+                msgList{2} = 'baxter_adapt/AdaptationRequest';
+                msgList{3} = 'baxter_adapt/AdaptationResponse';
+                msgList{4} = 'baxter_adapt/Imitation';
+                msgList{5} = 'baxter_adapt/ImitationRequest';
+                msgList{6} = 'baxter_adapt/ImitationResponse';
             end
             
             messageList = msgList;
@@ -33,8 +39,9 @@ classdef CustomMsgConsts
             
             persistent svcList
             if isempty(svcList)
-                svcList = cell(1, 1);
-                svcList{1} = 'baxter_adapt/Imitation';
+                svcList = cell(2, 1);
+                svcList{1} = 'baxter_adapt/Adaptation';
+                svcList{2} = 'baxter_adapt/Imitation';
             end
             
             % The message list was already sorted, so don't need to sort

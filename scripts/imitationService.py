@@ -14,7 +14,7 @@ def test(req):
 
 def imitation_server():
     rospy.init_node(NAME)
-    s = rospy.Service('imitation_server', Imitation, test)
+    s = rospy.Service('baxter_adapt/imitation_server', Imitation, test)
 
     # spin() keeps Python from exiting until node is shutdown
     rospy.spin()
