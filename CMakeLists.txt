@@ -10,11 +10,11 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   rospack
   baxter_core_msgs
-  baxter_gazebo
+  #baxter_gazebo
   baxter_interface
   baxter_tools
-  gazebo_ros
-  gazebo_msgs
+  #gazebo_ros
+  #gazebo_msgs
   message_generation
 )
 
@@ -94,12 +94,12 @@ catkin_package(
   rospy
   rospack
   baxter_core_msgs
-  baxter_gazebo
+  #baxter_gazebo
   baxter_interface
   baxter_tools
   baxter_tools
-  gazebo_ros
-  gazebo_msgs
+  #gazebo_ros
+  #gazebo_msgs
   message_runtime
 )
 

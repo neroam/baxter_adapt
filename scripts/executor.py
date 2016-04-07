@@ -59,6 +59,7 @@ class Executor(object):
         self._verbose = verbose # bool
         self._limb = baxter_interface.Limb(limb)
         self._gripper = baxter_interface.Gripper(limb)
+        self._gripper.calibrate()
         ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
         self._iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         rospy.wait_for_service(ns, 5.0)
@@ -68,6 +69,9 @@ class Executor(object):
         self._init_state = self._rs.state().enabled
         print("Enabling robot... ")
         self._rs.enable()
+
+    def set_to_joint(self, angles):
+        self._limb.set_joint_positions(angles)
 
     def move_to_joint(self, angles):
         self._guarded_move_to_joint_position(angles)
@@ -149,34 +153,21 @@ class Executor(object):
 
     def move_as_trajectory(self, filename):
         joints_left = self._limb.joint_names()
+        rate = rospy.Rate(1000)
 
-        print("Performing Trajectory: %s" % (filename,))
-        with open(filename, 'r') as f:
-            lines = f.readlines()
+        print("Calculating Trajectory: %s" % (filename,))
+        lines = self.ik_trajectory(filename, filename + '_joints')
         keys = lines[0].rstrip().split(',')
 
-        _cmd, lcmd_start, rcmd_start, _raw = clean_line(lines[1], keys)
-        print lcmd_start
+        cmd, lcmd, rcmd, values = clean_line(lines[1], keys)
+        print("Performing Trajectory")
+        self.move_to_joint(lcmd)
 
-        target = copy.deepcopy(self.get_current_pose())
-        target.position.x = lcmd_start['left_pos_x']
-        target.position.y = lcmd_start['left_pos_y']
-        target.position.z = lcmd_start['left_pos_z']
-        self.move_to_pose(target)
-
-        """
-        starting_joint_angles = {joint:lcmd_start[joint] for joint in joints_left}
-        self.move_to_joint(starting_joint_angles)
-        target = copy.deepcopy(self.get_current_pose())
-        """
-
-        rospy.sleep(1.0)
-
-        step = 20
+        start_time = rospy.get_time()
+        step = 1
         for i in xrange(1, len(lines)-1, step):
-            start_time = rospy.get_time()
             values = lines[i]
-            sys.stdout.write("\r Trajectory %d of %d\n" %
+            sys.stdout.write("\r Trajectory %d of %d" %
                              (i, len(lines) - 1))
             sys.stdout.flush()
 
@@ -187,38 +178,36 @@ class Executor(object):
                     print("\n Aborting - ROS shutdown")
                     return False
                 if len(lcmd):
-                    target.position.x = lcmd['left_pos_x']
-                    target.position.y = lcmd['left_pos_y']
-                    target.position.z = lcmd['left_pos_z']
-                    self.move_to_pose(target)
-                rospy.sleep(0.1*step)
+                    self.move_to_joint(lcmd)
+                rate.sleep()
 
     def ik_trajectory(self, file_in, file_out):
 
         joints_left = self._limb.joint_names()
-        joints_right = baxter_interface.Limb("right").joint_names()
 
         with open(file_in, 'r') as f:
             lines = f.readlines()
         keys = lines[0].rstrip().split(',')
 
         f =  open(file_out, 'w')
-        f.write('time,')
-        f.write(','.join([j for j in joints_left]) + ',')
-        f.write('left_gripper,')
-        f.write(','.join([j for j in joints_right]) + ',')
-        f.write('right_gripper\n')
+        lines_out = []
+        lines_out.append('time,' + ','.join([j for j in joints_left]) + '\n')
+        f.write(lines_out[0])
 
         _cmd, lcmd_start, rcmd_start, _raw = clean_line(lines[1], keys)
 
-        starting_joint_angles = { joint:lcmd_start[joint] for joint in self._limb.joint_names()}
+        target = copy.deepcopy(self.get_current_pose())
+        target.position.x = lcmd_start['left_pos_x']
+        target.position.y = lcmd_start['left_pos_y']
+        target.position.z = lcmd_start['left_pos_z']
+
+        """
+        starting_joint_angles = {joint:lcmd_start[joint] for joint in joints_left}
         self.move_to_joint(starting_joint_angles)
         target = copy.deepcopy(self.get_current_pose())
-
-        current_angles = [self._limb.joint_angle(joint) for joint in self._limb.joint_names()]
-
+        """
         step = 1
-        for i in xrange(1, 100, step):
+        for i in xrange(1, len(lines)-1, step):
             values = lines[i]
             sys.stdout.write("\r Trajectory %d of %d\n" %
                              (i, len(lines) - 1))
@@ -235,12 +224,11 @@ class Executor(object):
                     angles_left = [joint_angles[joint] for joint in self._limb.joint_names()]
                     print angles_left
 
-                    f.write("%f," % (values[0],))
-                    f.write(','.join([str(x) for x in angles_left]) + ',')
-                    f.write(str(cmd['left_gripper']) + ',')
-
-                    f.write(','.join([str(cmd[joint]) for joint in joints_right]) + ',')
-                    f.write(str(cmd['right_gripper']) + '\n')
+                    new_line = '%f,' % values[0]
+                    new_line += ','.join([str(x) for x in angles_left]) + '\n'
+                    lines_out.append(new_line)
+                    f.write(new_line)
+        return lines_out
 
 
 

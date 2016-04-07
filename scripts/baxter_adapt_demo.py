@@ -81,6 +81,7 @@ class Task(object):
             #self._executor.move_as_trajectory(resp.filename)
 
     def pick(self, pose):
+        print self._executor.get_current_pose()
         # open the gripper
         self._executor.gripper_open()
         # servo above pose
@@ -106,7 +107,7 @@ def main():
 
     rospy.init_node("baxter_adapt_demo")
 
-    rospy.wait_for_message("/robot/sim/started", Empty)
+    #rospy.wait_for_message("/robot/sim/started", Empty)
 
     limb = 'left'
     hover_distance = 0.15 # meters
@@ -125,13 +126,18 @@ def main():
                              y=0.999649402929,
                              z=0.00737916180073,
                              w=0.00486450832011)
+    side_orientation = Quaternion(
+                             x=0.702323969299,
+                             y=0.0288324448253,
+                             z=0.709840848369,
+                             w=0.0451187572977)
     block_poses = list()
     block_poses.append(Pose(
         position=Point(x=0.7, y=0.15, z=-0.029),
-        orientation=overhead_orientation))
+        orientation=side_orientation))
     block_poses.append(Pose(
         position=Point(x=0.75, y=0.0, z=-0.029),
-        orientation=overhead_orientation))
+        orientation=side_orientation))
 
     obstacles = [Point(0.8, 0.1, 0)]
 
