@@ -37,9 +37,11 @@ class Task(object):
         self._hover_distance = hover_distance # in meters
         self._verbose = verbose # bool
         self._executor = Executor(limb, verbose)
-        trajsvc = "baxter_adapt/adaptation_server"
+        #trajsvc = "baxter_adapt/adaptation_server"
+        trajsvc = "baxter_adapt/imitation_server"
         rospy.wait_for_service(trajsvc, 5.0)
-        self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
+        #self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
+        self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
 
     def move_to_start(self, start_angles=None):
         print("Moving the {0} arm to start pose...".format(self._limb_name))
@@ -80,6 +82,16 @@ class Task(object):
             # perform the trajectory via Inverse Kinematics
             #self._executor.move_as_trajectory(resp.filename)
 
+    def transfer_imitation(self, pose):
+        pose_start = self._executor.get_current_pose()
+        y_start = pose_start.position
+        y_end = pose.position
+        resp = self._trajsvc(y_start, y_end)
+        print resp
+
+        if resp.response is True:
+            self._executor.move_as_trajectory(resp.filename)
+
     def pick(self, pose):
         print self._executor.get_current_pose()
         # open the gripper
@@ -95,7 +107,7 @@ class Task(object):
 
     def place(self, pose):
         # servo above pose
-        self._approach(pose)
+        #self._approach(pose)
         # servo to pose
         self._executor.move_to_pose(pose)
         # open the gripper
@@ -110,7 +122,7 @@ def main():
     #rospy.wait_for_message("/robot/sim/started", Empty)
 
     limb = 'left'
-    hover_distance = 0.15 # meters
+    hover_distance = 0 # meters
     # Starting Joint angles for left arm
     starting_joint_angles = {'left_w0': 0.6699952259595108,
                              'left_w1': 1.030009435085784,
@@ -133,22 +145,23 @@ def main():
                              w=0.0451187572977)
     block_poses = list()
     block_poses.append(Pose(
-        position=Point(x=0.7, y=0.15, z=-0.029),
+        position=Point(x=0.7, y=0.45, z=-0.029),
         orientation=side_orientation))
     block_poses.append(Pose(
-        position=Point(x=0.75, y=0.0, z=-0.029),
+        position=Point(x=0.75, y=0.25, z=-0.029),
         orientation=side_orientation))
 
     obstacles = [Point(0.8, 0.1, 0)]
 
-    tk.move_to_start(starting_joint_angles)
+    #tk.move_to_start(starting_joint_angles)
     idx = 0
     while not rospy.is_shutdown():
         print("\nPicking...")
         tk.pick(block_poses[idx])
         idx = (idx+1) % len(block_poses)
         print("\nTransferring...")
-        tk.transfer(block_poses[idx], obstacles)
+        #tk.transfer(block_poses[idx], obstacles)
+        tk.transfer_imitation(block_poses[idx])
         print("\nPlacing...")
         tk.place(block_poses[idx])
     return 0

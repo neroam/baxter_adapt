@@ -178,7 +178,7 @@ class Executor(object):
                     print("\n Aborting - ROS shutdown")
                     return False
                 if len(lcmd):
-                    self.move_to_joint(lcmd)
+                    self.set_to_joint(lcmd)
                 rate.sleep()
 
     def ik_trajectory(self, file_in, file_out):
