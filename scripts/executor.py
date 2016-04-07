@@ -59,6 +59,7 @@ class Executor(object):
         self._verbose = verbose # bool
         self._limb = baxter_interface.Limb(limb)
         self._gripper = baxter_interface.Gripper(limb)
+        self._gripper.calibrate()
         ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
         self._iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         rospy.wait_for_service(ns, 5.0)
