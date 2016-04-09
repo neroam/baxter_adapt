@@ -37,20 +37,21 @@ class Task(object):
         self._hover_distance = hover_distance # in meters
         self._verbose = verbose # bool
         self._executor = Executor(limb, verbose)
-        #trajsvc = "baxter_adapt/adaptation_server"
-        trajsvc = "baxter_adapt/imitation_server"
+        trajsvc = "baxter_adapt/adaptation_server"
+        #trajsvc = "baxter_adapt/imitation_server"
         rospy.wait_for_service(trajsvc, 5.0)
-        #self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
-        self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
+        self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
+        #self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
 
     def move_to_start(self, start_angles=None):
+        print self._executor.get_current_joints()
+
         print("Moving the {0} arm to start pose...".format(self._limb_name))
         if not start_angles:
             start_angles = dict(zip(self._joint_names, [0]*7))
         self._executor.move_to_joint(start_angles)
         self._executor.gripper_open()
         rospy.sleep(1.0)
-        print("Running. Ctrl-c to quit")
 
     def _approach(self, pose):
         approach = copy.deepcopy(pose)
@@ -86,6 +87,10 @@ class Task(object):
         pose_start = self._executor.get_current_pose()
         y_start = pose_start.position
         y_end = pose.position
+
+        print y_start
+        print y_end
+
         resp = self._trajsvc(y_start, y_end)
         print resp
 
@@ -93,17 +98,17 @@ class Task(object):
             self._executor.move_as_trajectory(resp.filename)
 
     def pick(self, pose):
-        print self._executor.get_current_pose()
         # open the gripper
         self._executor.gripper_open()
         # servo above pose
         self._approach(pose)
         # servo to pose
+        print self._executor.get_current_joints
         self._executor.move_to_pose(pose)
         # close gripper
         self._executor.gripper_close()
         # retract to clear object
-        #self._retract()
+        self._retract()
 
     def place(self, pose):
         # servo above pose
@@ -115,23 +120,42 @@ class Task(object):
         # retract to clear object
         self._retract()
 
+    def get_feedback(self):
+        filename = os.getcwd() + '/trajectory_improved'
+        print('Please help me improve the task.')
+        self._executor.record(filename)
+        print('Done')
+
 def main():
 
     rospy.init_node("baxter_adapt_demo")
+    print "Initializing..."
 
-    #rospy.wait_for_message("/robot/sim/started", Empty)
+    rospy.wait_for_message("/robot/sim/started", Empty)
 
     limb = 'left'
     hover_distance = 0 # meters
     # Starting Joint angles for left arm
-    starting_joint_angles = {'left_w0': 0.6699952259595108,
-                             'left_w1': 1.030009435085784,
-                             'left_w2': -0.4999997247485215,
-                             'left_e0': -1.189968899785275,
-                             'left_e1': 1.9400238130755056,
-                             'left_s0': -0.08000397926829805,
-                             'left_s1': -0.9999781166910306}
+#     starting_joint_angles = {'left_w0': 0.6699952259595108,
+#                              'left_w1': 1.030009435085784,
+#                              'left_w2': -0.4999997247485215,
+#                              'left_e0': -1.189968899785275,
+#                              'left_e1': 1.9400238130755056,
+#                              'left_s0': 0.58000397926829805,
+#                              'left_s1': -0.9999781166910306}
+#
+
+    starting_joint_angles = {'left_w0': 0.3699952259595108,
+                             'left_w1': -1.030009435085784,
+                             'left_w2': -2.999997247485215,
+                             'left_e0': -0.089968899785275,
+                             'left_e1': 1.8400238130755056,
+                             'left_s0': -0.18000397926829805,
+                             'left_s1': -0.4999781166910306}
+
+
     tk = Task(limb, hover_distance)
+
     # An orientation for gripper fingers to be overhead and parallel to the obj
     overhead_orientation = Quaternion(
                              x=-0.0249590815779,
@@ -143,27 +167,42 @@ def main():
                              y=0.0288324448253,
                              z=0.709840848369,
                              w=0.0451187572977)
-    block_poses = list()
-    block_poses.append(Pose(
-        position=Point(x=0.7, y=0.45, z=-0.029),
-        orientation=side_orientation))
-    block_poses.append(Pose(
-        position=Point(x=0.75, y=0.25, z=-0.029),
-        orientation=side_orientation))
 
-    obstacles = [Point(0.8, 0.1, 0)]
-
-    #tk.move_to_start(starting_joint_angles)
-    idx = 0
+    print "Ready to go!"
     while not rospy.is_shutdown():
+
+        # Update the task contexts via perception
+        start_pose = Pose(
+            position=Point(x=0.83, y=0.53, z=-0.10),
+            orientation=side_orientation)
+
+        end_pose = Pose(
+            position=Point(x=0.80, y=-0.08, z=-0.11),
+            orientation=side_orientation)
+
+        obstacles = [Point(0.83, 0.36, 0)]
+
+        # Reset the robot pose
+        tk.move_to_start(starting_joint_angles)
+
         print("\nPicking...")
-        tk.pick(block_poses[idx])
-        idx = (idx+1) % len(block_poses)
+        tk.pick(start_pose)
+
+        # Transferring the object via adaptation movement
         print("\nTransferring...")
-        #tk.transfer(block_poses[idx], obstacles)
-        tk.transfer_imitation(block_poses[idx])
+        tk.transfer(end_pose, obstacles)
+        #tk.transfer_imitation(end_pose)
+
         print("\nPlacing...")
-        tk.place(block_poses[idx])
+        tk.place(end_pose)
+
+        needs_improve = raw_input('Would you like to improve movement? (y/n)')
+        if needs_improve == 'y':
+            tk.move_to_start(starting_joint_angles)
+            tk.pick(start_pose)
+            tk.get_feedback()
+
+
     return 0
 
 if __name__ == '__main__':

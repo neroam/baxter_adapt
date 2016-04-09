@@ -1,0 +1,6 @@
+#request weights learning 
+string filename
+---
+#response constants
+bool response
+string filename

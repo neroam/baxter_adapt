@@ -4,6 +4,7 @@ import argparse
 import struct
 import sys
 import copy
+import select
 
 import rospy
 import rospkg
@@ -75,6 +76,9 @@ class Executor(object):
 
     def move_to_joint(self, angles):
         self._guarded_move_to_joint_position(angles)
+
+    def get_current_joints(self):
+        return self._limb.joint_angles()
 
     def get_current_pose(self):
         pose = self._limb.endpoint_pose()
@@ -229,6 +233,39 @@ class Executor(object):
                     lines_out.append(new_line)
                     f.write(new_line)
         return lines_out
+
+    def record(self, filename):
+        rate = rospy.Rate(100)
+
+        joints_left = self._limb.joint_names()
+        with open(filename, 'w') as f:
+            f.write('time,')
+            f.write('left_pos_x,left_pos_y,left_pos_z,left_ori_x,left_ori_y,left_ori_z,left_ori_w,')
+            f.write(','.join([j for j in joints_left]) + '\n')
+
+            print "Start recording to file %f. Press Enter to stop." % filename
+            start_time = rospy.get_time()
+            while not rospy.is_shutdown():
+                angles_left = [self._limb.joint_angle(j) for j in joints_left]
+                pose = self._limb.endpoint_pose()
+                ep_position = pose['position']
+                ep_orientation = pose['orientation']
+
+                f.write("%f," % (rospy.get_time()-start_time,))
+
+                f.write(','.join([str(x) for x in ep_position]) + ',')
+                f.write(','.join([str(x) for x in ep_orientation]) + ',')
+
+                f.write(','.join([str(x) for x in angles_left]) + '\n')
+
+                if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+                    break
+
+                rate.sleep()
+
+
+
+
 
 
 

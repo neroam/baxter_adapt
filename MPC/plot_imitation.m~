@@ -31,12 +31,13 @@ else if DOF == 3
         ylabel('y', 'fontsize', fs);
         zlabel('z', 'fontsize', fs);
         
+        if nargin =
         lhndLegend=legend([prior_plot,est_plot,hObs], 'Prior Mean Trajectory','Predicted Mean Trajectory','Task Contexts');
         
-        if nargin == 4
-            hTrue=plot3(datasetsTest.Ymat(1,:), datasetsTest.Ymat(2,:),datasetsTest.Ymat(3,:), 'linewidth', lw*2);
-            lhndLegend=legend([prior_plot,est_plot,hTrue,hObs], 'Prior Mean Trajectory','Predicted Mean Trajectory','True Trajectory','Task Contexts');
-        end
+        if n
+        hTrue=plot3(datasetsTest.Ymat(1,:), datasetsTest.Ymat(2,:),datasetsTest.Ymat(3,:), 'linewidth', lw*2);
+        lhndLegend=legend([prior_plot,est_plot,hTrue,hObs], 'Prior Mean Trajectory','Predicted Mean Trajectory','True Trajectory','Task Contexts');
+        
         set(lhndLegend, 'fontsize', fs);
         set(gca, 'fontsize', fs);    
     end

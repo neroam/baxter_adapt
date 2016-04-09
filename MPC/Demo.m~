@@ -19,8 +19,9 @@ flgPlotData = 0;
 %% Predict future trajectory points given some observations
 % for simplicity, one of the training traj. is used
 datasetsTest = datasets;
-lTestId = 2;
+lTestId = 1;
 
+y_test
 y_start = datasets(lTestId).Ymat(:,1);
 y_end = datasets(lTestId).Ymat(:,T);
 
@@ -31,13 +32,10 @@ y_end = datasets(lTestId).Ymat(:,T);
     lambdaProMPs, T, DOF, y_testMat, y_predProMPsMat);
 
 %% Plot the imitation trajectory
-% plot_imitation(y_prior,y_predProMPsMat,y_testMat);
-plot_imitation(y_prior,y_predProMPsMat,y_testMat,datasetsTest(lTestId));
-
+plot_imitation(y_prior,y_predProMPsMat,y_testMat)
 
 %% Save trained data
-loaded = 1;
-save('trainedData_round2.mat', 'DOF','lambdaProMPs','PSI_X','T','wsProMPsPrior','y_prior','loaded');
+save('trainedData_round2.mat', 'DOF','lambdaProMPs','PSI_X','T','wsProMPsPrior','y_prior');
 
 
 

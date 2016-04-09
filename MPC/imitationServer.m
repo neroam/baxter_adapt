@@ -1,5 +1,6 @@
-clear all
+clear all;
 
+rosshutdown;
 imitation_name = '/imitation_server';
 rosinit;
 imitation_node = robotics.ros.Node(imitation_name);
