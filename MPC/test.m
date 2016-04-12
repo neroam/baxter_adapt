@@ -11,7 +11,7 @@ N = 1;
 M = 10;
 err_dist = zeros(M+1,N);
 k = 1;
-n_o = 2;
+n_o = 1;
 config.horizon = 29;
 config.step = 29;
 config.umax = 0.2;
@@ -37,7 +37,7 @@ if ~simulation_3D
 
 else     %%% 3D simulation
     %% Weights initialization
-    weights = [10 10 10 10 0 0 0 0 1 0 0 0 0 1 0 0]';
+    weights = [10 10 10 10 0 0 0 0 0 0 0]';
     % weights = [0.2 0.2 1 0 -0.28 0.28]';
     % weights = [10 10 0 0 1 1];
 end
@@ -74,7 +74,7 @@ for i = 1:N
             continue;
         end
     else
-        contexts.obstacles = repmat([0.24 0.47, 0.64]',1,n_o);
+        contexts.obstacles = repmat([0.83 0.33, 0]',1,n_o);
         contexts.obstacles(3,:) = linspace(0, contexts.obstacles(3,1), n_o);
 %         contexts.obstacles = rand(3,1);
     end
