@@ -17,7 +17,9 @@ from executor import Executor
 
 def map_file(filename):
     executor = Executor("left")
-    executor.move_as_trajectory(filename)
+    traj = open(filename, 'r').readlines()
+    #traj = executor.ik_trajectory(filename, filename + '_joints', executor.get_current_pose())
+    executor.move_as_trajectory(traj)
 
 def main():
     """RSDK Joint Position Example: File Playback
