@@ -175,7 +175,7 @@ class Executor(object):
 
             cmd, lcmd, rcmd, values = clean_line(values, keys)
             #command this set of commands until the next frame
-            while (rospy.get_time() - start_time) < values[0] :
+            while (rospy.get_time() - start_time) < values[0]*5 :
                 if rospy.is_shutdown():
                     print("\n Aborting - ROS shutdown")
                     return False
