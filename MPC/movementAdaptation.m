@@ -1,5 +1,9 @@
 function y_adapted=movementAdaptation(y_start, y_end, weights, contexts)
 
+global config;
+global imitation_traj;
+global adaptation_traj;
+
 [y_predVar, y_predProMPsMat]=movementImitation(y_start, y_end);
 
 %% Offline Learned trajectory
@@ -42,6 +46,10 @@ objects=scatter3(contexts.obstacles(1,:),contexts.obstacles(2,:),contexts.obstac
 lhndLegend=legend([imitation, adapt,objects], 'Imitation Trajectory','Adaptation Trajectory','Obstacles');
 set(lhndLegend, 'fontsize', fs);
 set(gca, 'fontsize', fs);
+
+
+imitation_traj = refTraj;
+adaptation_traj= y_adapted;
 
 
 end

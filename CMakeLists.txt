@@ -63,6 +63,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    Imitation.srv
    Adaptation.srv
+   Learning.srv
  )
 
 ## Generate actions in the 'action' folder

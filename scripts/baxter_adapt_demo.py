@@ -39,8 +39,11 @@ class Task(object):
         self._executor = Executor(limb, verbose)
         trajsvc = "baxter_adapt/adaptation_server"
         #trajsvc = "baxter_adapt/imitation_server"
+        learningsvc = "baxter_adapt/learning_server"
         rospy.wait_for_service(trajsvc, 5.0)
+        rospy.wait_for_service(learningsvc, 5.0)
         self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
+        self._learningsvc = rospy.ServiceProxy(learningsvc, Learning)
         #self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
 
     def move_to_start(self, start_angles=None):
@@ -65,11 +68,12 @@ class Task(object):
         retract.position.z = retract.position.z + self._hover_distance
         self._executor.move_to_pose(retract)
 
-    def transfer(self, pose, obstacles):
+    def transfer(self, pose_start, pose_end, obstacles):
         # request Matlab to compute trajectory
-        pose_start = self._executor.get_current_pose()
         y_start = pose_start.position
-        y_end = pose.position
+        y_end = pose_end.position
+
+        print "Adapting Trajectory Learned from Demonstrations"
         resp = self._trajsvc(y_start, y_end, obstacles)
         print resp
 
@@ -77,7 +81,14 @@ class Task(object):
             print "Wait for trajectory generation"
             rospy.sleep(2.0)
 
-        self._executor.move_as_trajectory(resp.filename)
+        print("Calculating Trajectory: %s" % (resp.filename,))
+        traj = self._executor.ik_trajectory(resp.filename, resp.filename + '_joints', pose_start)
+
+        self.pick(pose_start)
+        rospy.sleep(1.0)
+        self._executor.move_as_trajectory(traj)
+        rospy.sleep(1.0)
+        self.place(pose_end)
 
         #if resp.response is True:
             # perform the trajectory via Inverse Kinematics
@@ -120,11 +131,18 @@ class Task(object):
         # retract to clear object
         self._retract()
 
+    def learning(self):
+        print('Learning weights from feedback')
+        feedback = self.get_feedback()
+        resp = self._learningsvc(feedback)
+        print('Updated weights for movement adaptation')
+
     def get_feedback(self):
         filename = os.getcwd() + '/trajectory_improved'
         print('Please help me improve the task.')
         self._executor.record(filename)
         print('Done')
+        return filename
 
 def main():
 
@@ -185,23 +203,16 @@ def main():
         # Reset the robot pose
         tk.move_to_start(starting_joint_angles)
 
-        print("\nPicking...")
-        tk.pick(start_pose)
-
         # Transferring the object via adaptation movement
         print("\nTransferring...")
-        tk.transfer(end_pose, obstacles)
+        tk.transfer(start_pose, end_pose, obstacles)
         #tk.transfer_imitation(end_pose)
-
-        print("\nPlacing...")
-        tk.place(end_pose)
 
         needs_improve = raw_input('Would you like to improve movement? (y/n)')
         if needs_improve == 'y':
             tk.move_to_start(starting_joint_angles)
             tk.pick(start_pose)
-            tk.get_feedback()
-
+            tk.learning()
 
     return 0
 
