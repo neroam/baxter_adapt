@@ -16,5 +16,6 @@
    <build_depend>baxter_adapt</build_depend>
    <build_depend>baxter_examples</build_depend>
    <build_depend>baxter_interface</build_depend>
+   <build_depend>baxter_pykdl</build_depend>
    <build_depend>baxter_tools</build_depend>
 </package>

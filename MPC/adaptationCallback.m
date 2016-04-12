@@ -1,6 +1,9 @@
 function resp = adaptationCallback(server,req,resp)
 
     req
+
+    global contexts;
+    global weights;
     
     y_start = [req.YStart.X, req.YStart.Y, req.YStart.Z]';
     y_end = [req.YEnd.X, req.YEnd.Y, req.YEnd.Z]';
@@ -14,8 +17,6 @@ function resp = adaptationCallback(server,req,resp)
     contexts.obstacles = obstacles
 
     num_weights = 4 + 5*num_obst + 2; 
-
-    global weights;
 
     if exist('weights','var') == 0 || num_weights ~= length(weights)
         display('Initialzie weights');

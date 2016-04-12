@@ -155,12 +155,10 @@ class Executor(object):
         joint_angles = self.ik_request(pose)
         self._guarded_move_to_joint_position(joint_angles)
 
-    def move_as_trajectory(self, filename):
+    def move_as_trajectory(self, lines):
         joints_left = self._limb.joint_names()
         rate = rospy.Rate(1000)
 
-        print("Calculating Trajectory: %s" % (filename,))
-        lines = self.ik_trajectory(filename, filename + '_joints')
         keys = lines[0].rstrip().split(',')
 
         cmd, lcmd, rcmd, values = clean_line(lines[1], keys)
@@ -185,7 +183,7 @@ class Executor(object):
                     self.set_to_joint(lcmd)
                 rate.sleep()
 
-    def ik_trajectory(self, file_in, file_out):
+    def ik_trajectory(self, file_in, file_out, pose_start):
 
         joints_left = self._limb.joint_names()
 
@@ -200,7 +198,7 @@ class Executor(object):
 
         _cmd, lcmd_start, rcmd_start, _raw = clean_line(lines[1], keys)
 
-        target = copy.deepcopy(self.get_current_pose())
+        target = copy.deepcopy(pose_start)
         target.position.x = lcmd_start['left_pos_x']
         target.position.y = lcmd_start['left_pos_y']
         target.position.z = lcmd_start['left_pos_z']
@@ -243,7 +241,7 @@ class Executor(object):
             f.write('left_pos_x,left_pos_y,left_pos_z,left_ori_x,left_ori_y,left_ori_z,left_ori_w,')
             f.write(','.join([j for j in joints_left]) + '\n')
 
-            print "Start recording to file %f. Press Enter to stop." % filename
+            print "Start recording to file " + filename + ". Press Enter to stop."
             start_time = rospy.get_time()
             while not rospy.is_shutdown():
                 angles_left = [self._limb.joint_angle(j) for j in joints_left]
