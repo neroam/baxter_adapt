@@ -18,16 +18,16 @@ Y_joints = Px*x + Pu*U;
 
 Y = zeros(dim*h, 1);
 gradY = zeros(dim*h, joints_dim*h);
-rotationY = zeros(9*h,1);
-gradRotY = zeros(9*h, joints_dim*h);
+rotY = zeros(4*h,1);
+gradRotY = zeros(4*h, joints_dim*h);
 
 for i = 1:h
     t = (i-1)*dim+1:i*dim;
-    [pose, rotMat, gradPose] = forwardKine(Y_joints((i-1)*joints_dim+1:i*joints_dim,1));
+    [pose, gradPose] = forwardKine(Y_joints((i-1)*joints_dim+1:i*joints_dim,1));
     Y(t,:) = pose(1:3,:);
-    gradY(t,(i-1)*joints_dim+1:i*joints_dim) = squeeze(gradPose(1:3,4,:));
-    rotationY((i-1)*9+1:i*9,:) = rotMat(:);
-    gradRotY((i-1)*9+1:i*9,(i-1)*joints_dim+1:i*joints_dim) = reshape(gradPose(1:3,1:3,:),9,7);
+    gradY(t,(i-1)*joints_dim+1:i*joints_dim) = gradPose(1:3,:);
+    rotY((i-1)*4+1:i*4,:) = pose(4:7,:);
+    gradRotY((i-1)*4+1:i*4,(i-1)*joints_dim+1:i*joints_dim) = gradPose(4:7,:);
     
 end
 
@@ -53,13 +53,13 @@ feq = zeros(1,h);
 gradfeq = zeros(length(U),h);
 
 %% Rotation of end_effector constraints
-[~, Y0Mat, ~] = forwardKine(y0_joints);
-rotY0 = Y0Mat(:);
+[y0_pose,~] = forwardKine(y0_joints);
+rotY0 = y0_pose(4:7,1);
 
 for i = 1:h
-    rotYi = rotationY((i-1)*9+1:i*9,1);
+    rotYi = rotY((i-1)*4+1:i*4,1);
     feq(i) = (rotYi-rotY0)'*(rotYi-rotY0);
-    gradfeq(:,i) = 2*Pu((i-1)*joints_dim+1:i*joints_dim,:)'*gradRotY((i-1)*9+1:i*9,(i-1)*joints_dim+1:i*joints_dim)'*(rotYi-rotY0);
+    gradfeq(:,i) = 2*Pu((i-1)*joints_dim+1:i*joints_dim,:)'*gradRotY((i-1)*4+1:i*4,(i-1)*joints_dim+1:i*joints_dim)'*(rotYi-rotY0);
 end
 
 %% Terminal state constraint

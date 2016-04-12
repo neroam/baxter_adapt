@@ -40,8 +40,8 @@ class Task(object):
         trajsvc = "baxter_adapt/adaptation_server"
         #trajsvc = "baxter_adapt/imitation_server"
         learningsvc = "baxter_adapt/learning_server"
-        rospy.wait_for_service(trajsvc, 5.0)
-        rospy.wait_for_service(learningsvc, 5.0)
+        #rospy.wait_for_service(trajsvc, 5.0)
+        #rospy.wait_for_service(learningsvc, 5.0)
         self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
         self._learningsvc = rospy.ServiceProxy(learningsvc, Learning)
         #self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
@@ -114,8 +114,9 @@ class Task(object):
         # servo above pose
         self._approach(pose)
         # servo to pose
-        print self._executor.get_current_joints
         self._executor.move_to_pose(pose)
+        print self._executor.get_current_pose()
+        print self._executor.get_current_joints()
         # close gripper
         self._executor.gripper_close()
         # retract to clear object
@@ -154,23 +155,22 @@ def main():
     limb = 'left'
     hover_distance = 0 # meters
     # Starting Joint angles for left arm
-#     starting_joint_angles = {'left_w0': 0.6699952259595108,
-#                              'left_w1': 1.030009435085784,
-#                              'left_w2': -0.4999997247485215,
-#                              'left_e0': -1.189968899785275,
-#                              'left_e1': 1.9400238130755056,
-#                              'left_s0': 0.58000397926829805,
-#                              'left_s1': -0.9999781166910306}
+    starting_joint_angles = {'left_w0': 0.6699952259595108,
+                             'left_w1': 1.030009435085784,
+                             'left_w2': -0.4999997247485215,
+                             'left_e0': -1.189968899785275,
+                             'left_e1': 1.9400238130755056,
+                             'left_s0': 0.58000397926829805,
+                             'left_s1': -0.9999781166910306}
+
+#     starting_joint_angles = {'left_w0': 0.3699952259595108,
+#                              'left_w1': -1.030009435085784,
+#                              'left_w2': -2.999997247485215,
+#                              'left_e0': -0.089968899785275,
+#                              'left_e1': 1.8400238130755056,
+#                              'left_s0': -0.18000397926829805,
+#                              'left_s1': -0.4999781166910306}
 #
-
-    starting_joint_angles = {'left_w0': 0.3699952259595108,
-                             'left_w1': -1.030009435085784,
-                             'left_w2': -2.999997247485215,
-                             'left_e0': -0.089968899785275,
-                             'left_e1': 1.8400238130755056,
-                             'left_s0': -0.18000397926829805,
-                             'left_s1': -0.4999781166910306}
-
 
     tk = Task(limb, hover_distance)
 
@@ -192,16 +192,19 @@ def main():
         # Update the task contexts via perception
         start_pose = Pose(
             position=Point(x=0.83, y=0.53, z=-0.10),
-            orientation=side_orientation)
+            orientation=overhead_orientation)
 
         end_pose = Pose(
             position=Point(x=0.80, y=-0.08, z=-0.11),
-            orientation=side_orientation)
+            orientation=overhead_orientation)
 
         obstacles = [Point(0.83, 0.36, 0)]
 
         # Reset the robot pose
         tk.move_to_start(starting_joint_angles)
+
+        tk.pick(start_pose)
+        exit
 
         # Transferring the object via adaptation movement
         print("\nTransferring...")

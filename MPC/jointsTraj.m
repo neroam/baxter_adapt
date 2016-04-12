@@ -81,7 +81,7 @@ for i = 1:step:T
     
     %%% Using fmincon
     options = optimoptions(@fmincon,...
-    'GradObj','on','GradConstr','on','optimoptions',5000,'Algorithm','');
+    'GradObj','on','GradConstr','on','MaxFunEvals',5000);
 % ,'Algorithm','interior-point',...
 %     ,'Hessian','user-supplied','HessFcn',@(U,lambda)quadHess(U,lambda,contextOpt,weights, config)...
 %     options = optimoptions(@fmincon,'Algorithm','interior-point');
@@ -95,7 +95,7 @@ for i = 1:step:T
     for j = 1:min(step,h)
         x(i+j,:) = (A*x(i+j-1,:)' + B*Ut(joints_dim*(j-1)+1:joints_dim*j,1))';
         joints(i+j,:) = (C*x(i+j,:)')';
-        [pose, ~,~] = forwardKine(joints(i+j,:)');
+        [pose, ~] = forwardKine(joints(i+j,:)');
         y_adapted(i+j,:) = pose';
     end
     
