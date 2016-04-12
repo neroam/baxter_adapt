@@ -7,8 +7,8 @@ refTraj = y_predProMPsMat';
 refVar = y_predVar';
 
 %% Configuration
-config.horizon = 11;
-config.step = 11;
+config.horizon = 5;
+config.step = 5;
 config.umax = 2;
 config.dmin = 0.01;
 config.scale = 1;
