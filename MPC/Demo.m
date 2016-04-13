@@ -37,7 +37,7 @@ plot_imitation(y_prior,y_predProMPsMat,y_testMat,datasetsTest(lTestId));
 
 %% Save trained data
 loaded = 1;
-save('trainedData_round2.mat', 'DOF','lambdaProMPs','PSI_X','T','wsProMPsPrior','y_prior','loaded');
+save('trainedData_joints2.mat', 'DOF','lambdaProMPs','PSI_X','T','wsProMPsPrior','y_prior','loaded');
 
 
 

@@ -19,8 +19,7 @@ x = contexts.xt;
 y0_joints = contexts.yt;
 Px = contexts.Px;
 Pu = contexts.Pu;
-[h, dim] = size(contexts.refTraj);
-joints_dim = size(Px,2);
+[h, joints_dim] = size(contexts.refTraj);
 refTraj = reshape(contexts.refTraj',[],1);
 refVar = reshape(contexts.refVar',[],1);
 obstacles = contexts.obstacles;
@@ -32,26 +31,51 @@ s = config.scale;
 %% Predict future outputs
 Y_joints = Px*x + Pu*U;
 
-Y = zeros(dim*h, 1);
-gradY = zeros(dim*h, joints_dim*h);
-
-for i = 1:h
-    t = (i-1)*dim+1:i*dim;
-    [pose,gradPose] = forwardKine(Y_joints((i-1)*joints_dim+1:i*joints_dim,1));
-    Y(t,:) = pose(1:3,:);
-    gradY(t,(i-1)*joints_dim+1:i*joints_dim) = gradPose(1:3,:);
-end
-
 %%% Demonstration feature
 A = cell(1, h);
 for i = 1:h
-    A{i} = diag(weights(1:dim)).*diag(refVar((i-1)*dim+1:i*dim,1));
+    A{i} = diag(weights(1:joints_dim)).*diag(refVar((i-1)*joints_dim+1:i*joints_dim,1));
 %     A{i} = diag(weights(1:dim));
 end
 W = blkdiag(A{:});
 
-f = (Y-refTraj)'*W*(Y-refTraj);
-g = 2*Pu'*gradY'*W*(Y-refTraj);
+f = (Y_joints-refTraj)'*W*(Y_joints-refTraj);
+g = 2*Pu'*W*(Y_joints-refTraj);
+
+%%% Smooth feature
+W = weights(joints_dim+1,1);
+
+f = f + W*(Y_joints(1:joints_dim,1)-y0_joints)'*(Y_joints(1:joints_dim,1)-y0_joints);
+g = g + W*2*Pu(1:joints_dim,:)'*(Y_joints(1:joints_dim,1) - y0_joints);
+
+for i = 2:h
+    t = (i-1)*joints_dim+1:i*joints_dim;
+    f = f + W*(Y_joints(t,1) - Y_joints(t-joints_dim,1))'*(Y_joints(t,1) - Y_joints(t-joints_dim,1));
+    g = g + W*2*(Pu(t,:)-Pu(t-joints_dim,:))'*(Y_joints(t,1) - Y_joints(t-joints_dim,1));
+end
+
+
+
+% Y = zeros(dim*h, 1);
+% gradY = zeros(dim*h, joints_dim*h);
+% 
+% for i = 1:h
+%     t = (i-1)*dim+1:i*dim;
+%     [pose,gradPose] = forwardKine(Y_joints((i-1)*joints_dim+1:i*joints_dim,1));
+%     Y(t,:) = pose;
+%     gradY(t,(i-1)*joints_dim+1:i*joints_dim) = gradPose;
+% end
+% 
+% %%% Demonstration feature
+% A = cell(1, h);
+% for i = 1:h
+%     A{i} = diag(weights(1:dim)).*diag(refVar((i-1)*dim+1:i*dim,1));
+% %     A{i} = diag(weights(1:dim));
+% end
+% W = blkdiag(A{:});
+% 
+% f = (Y-refTraj)'*W*(Y-refTraj);
+% g = 2*Pu'*gradY'*W*(Y-refTraj);
 
 % %%% Smooth feature
 % W = weights(dim+1,1);

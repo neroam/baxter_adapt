@@ -1,14 +1,16 @@
-function [y_adapted, joints]=movementAdaptation2(y_start, y_end, weights, contexts)
+function [y_adapted, joints, refTraj]=movementAdaptation2(y_end, weights, contexts)
 
-[y_predVar, y_predProMPsMat]=movementImitation(y_start(1:3), y_end(1:3));
+% y_start = forwardKine(contexts.start_joints);
+
+[y_predVar, y_predProMPsMat]=movementImitation(contexts.start_joints, y_end);
 
 %% Offline Learned trajectory
 refTraj = y_predProMPsMat';
 refVar = y_predVar';
 
 %% Configuration
-config.horizon = 5;
-config.step = 5;
+config.horizon = 11;
+config.step = 11;
 config.umax = 2;
 config.dmin = 0.01;
 config.scale = 1;
@@ -32,6 +34,11 @@ contexts.ground = -0.2;
 % writeTrajectory(filename, y_adapted');
 
     
+
+ for i = 1:size(refTraj,1)
+     refTraj(i,:) = forwardKine(refTraj(i,:)')';
+ end
+
 %% Plot adapted trajectory
 figure;
 imitation=plot3(refTraj(:,1)', refTraj(:,2)', refTraj(:,3)' ,'--','linewidth',lw*2);

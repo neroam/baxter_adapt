@@ -8,7 +8,8 @@ function [y, delta, startIdx, endIdx] = preprocess(data)
     
     startIdx = -1;
     endIdx = -1;
-    threshold = 1e-4;
+%     threshold = 1e-4;
+    threshold = 1e-3;
     step = 20;
     
     for i = 1:length(delta)-step

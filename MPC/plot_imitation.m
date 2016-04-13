@@ -20,7 +20,18 @@ if DOF == 2
     set(lhndLegend, 'fontsize', fs);
     set(gca, 'fontsize', fs);
     
-else if DOF == 3
+else if DOF >= 3
+        
+        for i = 1:size(y_prior,1)
+            y_prior(i,:) = forwardKine(y_prior(i,:)')';
+        end
+        for i = 1:size(y_predProMPsMat,2)
+            y_predProMPsMat(:,i) = forwardKine(y_predProMPsMat(:,i));
+        end
+        for i = 1:size(y_testMat,2)
+            y_testMat(:,i) = forwardKine(y_testMat(:,i));
+        end
+       
         
         prior_plot=plot3(y_prior(:,1)', y_prior(:,2)', y_prior(:,3)', '--','linewidth',lw*2);
         hold all;
@@ -34,6 +45,11 @@ else if DOF == 3
         lhndLegend=legend([prior_plot,est_plot,hObs], 'Prior Mean Trajectory','Predicted Mean Trajectory','Task Contexts');
         
         if nargin == 4
+            for i = 1:size(datasetsTest.Ymat,2)
+                datasetsTest.Ymat(:,i) = forwardKine(datasetsTest.Ymat(:,i));
+            end
+        
+            
             hTrue=plot3(datasetsTest.Ymat(1,:), datasetsTest.Ymat(2,:),datasetsTest.Ymat(3,:), 'linewidth', lw*2);
             lhndLegend=legend([prior_plot,est_plot,hTrue,hObs], 'Prior Mean Trajectory','Predicted Mean Trajectory','True Trajectory','Task Contexts');
         end

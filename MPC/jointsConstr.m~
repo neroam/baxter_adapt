@@ -5,7 +5,8 @@ function [f, feq, gradf, gradfeq] = jointsConstr(U, contexts, config)
 x = contexts.xt;
 Px = contexts.Px;
 Pu = contexts.Pu;
-[h, joints_dim] = size(contexts.refTraj);
+[h, joints_di] = size(contexts.refTraj);
+joints_dim = size(Px,2);
 obstacles = contexts.obstacles;
 
 %% Configuration

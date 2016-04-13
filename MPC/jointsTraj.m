@@ -29,7 +29,7 @@ umax = config.umax;
 
 %%% Initialization
 y_adapted = zeros(T, 7);
-y_adapted(1,1:3) = y_ref(1,:);
+y_adapted(1,:) = forwardKine(contexts.start_joints);
 
 joints = zeros(T, joints_dim);
 x = zeros(T, joints_dim);
@@ -81,7 +81,8 @@ for i = 1:step:T
     
     %%% Using fmincon
     options = optimoptions(@fmincon,...
-    'GradObj','on','GradConstr','on','MaxFunEvals',5000);
+    'MaxFunEvals',10000,'MaxIter',2000,'TolFun', 1e-10,'GradConstr','on','GradObj','on');
+% 'GradConstr','on',
 % ,'Algorithm','interior-point',...
 %     ,'Hessian','user-supplied','HessFcn',@(U,lambda)quadHess(U,lambda,contextOpt,weights, config)...
 %     options = optimoptions(@fmincon,'Algorithm','interior-point');
