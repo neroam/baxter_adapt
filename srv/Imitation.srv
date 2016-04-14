@@ -1,7 +1,0 @@
-#request imitation trajectory 
-geometry_msgs/Point y_start
-geometry_msgs/Point y_end
----
-#response constants
-bool response
-string filename

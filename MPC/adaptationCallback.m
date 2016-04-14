@@ -1,36 +1,63 @@
 function resp = adaptationCallback(server,req,resp)
 
     req
-
-    global contexts;
+    
     global weights;
+    global contexts;
+    global config;
+    global joints_imit;
+    global joints_adapt;
+    global y_imit;
+    global y_adapt;
+    global target;
     
-    y_start = [req.YStart.X, req.YStart.Y, req.YStart.Z]';
-    y_end = [req.YEnd.X, req.YEnd.Y, req.YEnd.Z]';
-
-    obstacles = [];
-    num_obst = length(req.Obstacles);
-    for i = 1:num_obst
-       obstacles = [obstacles, [req.Obstacles(i).X, req.Obstacles(i).Y, req.Obstacles(i).Z]']; 
-    end
-
-    contexts.obstacles = obstacles
-
-    num_weights = 4 + 5*num_obst + 2; 
-
-    if exist('weights','var') == 0 || num_weights ~= length(weights)
-        display('Initialzie weights');
-        weights = [10 10 10 10, zeros(1,5*num_obst), 0 0]';
-    end
-
-    weights
-    
-    resp.Filename = [pwd,'/generated/adaptationTrajectory'];
+    resp.Filename = [pwd,'/generated/JointsTrajectory'];
     delete(resp.Filename);
     display('Cache deleted');
+    contexts.filename = resp.Filename;
     
-    F=parfeval(@movementAdaptation,1,y_start, y_end, weights, contexts)
+    %%% Process request
+    contexts.start_joints = reshape(req.StartJoints(1:7),7,1);
+    target = reshape(req.EndJoints(1:7),7,1);
+ 
+    %%% Movement Imitation
+    [y_predVar, y_predProMPsMat]=movementImitation(target, contexts);
+    
+    joints_imit = y_predVar';
+    for i = 1:size(joints_imit,1)
+        y_imit(i,:) = forwardKine(joints_imit(i,:)')';
+    end
+    
+    joints_adapt = joints_imit;
+    y_adapt = y_imit;
+   
+    %%% Movement Adaptation
+    if req.EnableAdapt
+        
+        refTraj = y_predProMPsMat';
+        refVar = y_predVar';
 
+        num_obst = length(req.Obstacles);
+        contexts.obstacles = zeros(3, num_obst);    
+        for i = 1:num_obst
+           contexts.obstacles(:,i) = [req.Obstacles(i).X, req.Obstacles(i).Y, req.Obstacles(i).Z]'; 
+        end
+
+        num_weights = 8 + 5*num_obst + 2; 
+
+        if exist('weights','var') == 0 || num_weights ~= length(weights)
+            display('Initialzie weights');
+            weights = [zeros(1,7),0, zeros(1,5*num_obst), 0, 0]';
+        end
+
+        weights
+
+        %% Contexts initialization
+        contexts.refTraj = refTraj;
+        contexts.refVar = refVar;
+    
+        parfeval(@jointsTraj,1,contexts, weights, config);
+    end
+       
     resp.Response = 1;
-
 end

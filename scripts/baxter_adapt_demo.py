@@ -38,13 +38,11 @@ class Task(object):
         self._verbose = verbose # bool
         self._executor = Executor(limb, verbose)
         trajsvc = "baxter_adapt/adaptation_server"
-        #trajsvc = "baxter_adapt/imitation_server"
         learningsvc = "baxter_adapt/learning_server"
-        #rospy.wait_for_service(trajsvc, 5.0)
-        #rospy.wait_for_service(learningsvc, 5.0)
+        rospy.wait_for_service(trajsvc, 5.0)
+        rospy.wait_for_service(learningsvc, 5.0)
         self._trajsvc = rospy.ServiceProxy(trajsvc, Adaptation)
         self._learningsvc = rospy.ServiceProxy(learningsvc, Learning)
-        #self._trajsvc = rospy.ServiceProxy(trajsvc, Imitation)
 
     def move_to_start(self, start_angles=None):
         print self._executor.get_current_joints()
@@ -69,6 +67,7 @@ class Task(object):
         self._executor.move_to_pose(retract)
 
     def transfer(self, pose_start, pose_end, obstacles):
+
         # request Matlab to compute trajectory
         y_start = pose_start.position
         y_end = pose_end.position
@@ -94,19 +93,28 @@ class Task(object):
             # perform the trajectory via Inverse Kinematics
             #self._executor.move_as_trajectory(resp.filename)
 
-    def transfer_imitation(self, pose):
-        pose_start = self._executor.get_current_pose()
-        y_start = pose_start.position
-        y_end = pose.position
+    def transfer_imitation(self, start_pose, end_pose):
+        print("Picking up the object")
+        self.pick(start_pose)
 
-        print y_start
-        print y_end
+        print("Computing imitation trajectory")
+        joint_names = self._executor.joint_names()
+        joints = self._executor.ik_request(start_pose)
+        start_joints = [joints[i] for i in joint_names]
+        joints = self._executor.ik_request(end_pose)
+        end_joints = [joints[i] for i in joint_names]
 
-        resp = self._trajsvc(y_start, y_end)
+        print start_joints
+        print end_joints
+
+        obstacles = []
+        resp = self._trajsvc(start_joints, end_joints, obstacles, False)
         print resp
 
         if resp.response is True:
-            self._executor.move_as_trajectory(resp.filename)
+            print("Perform trajectory")
+            traj = open(resp.filename, 'r').readlines()
+            self._executor.move_as_trajectory(traj)
 
     def pick(self, pose):
         # open the gripper
@@ -115,8 +123,6 @@ class Task(object):
         self._approach(pose)
         # servo to pose
         self._executor.move_to_pose(pose)
-        print self._executor.get_current_pose()
-        print self._executor.get_current_joints()
         # close gripper
         self._executor.gripper_close()
         # retract to clear object
@@ -155,14 +161,22 @@ def main():
     limb = 'left'
     hover_distance = 0 # meters
     # Starting Joint angles for left arm
-    starting_joint_angles = {'left_w0': 0.6699952259595108,
-                             'left_w1': 1.030009435085784,
-                             'left_w2': -0.4999997247485215,
-                             'left_e0': -1.189968899785275,
-                             'left_e1': 1.9400238130755056,
-                             'left_s0': 0.58000397926829805,
-                             'left_s1': -0.9999781166910306}
+    starting_joint_angles = {'left_w0': -0.23009711792,
+                             'left_w1': 0.749733109222,
+                             'left_w2': -1.41164581844,
+                             'left_e0': 0.192131093463,
+                             'left_e1': 1.27051958611,
+                             'left_s0': -0.37275733103,
+                             'left_s1': -0.415325297845}
 
+#     starting_joint_angles = {'left_w0': 0.6699952259595108,
+#                              'left_w1': 1.030009435085784,
+#                              'left_w2': -0.4999997247485215,
+#                              'left_e0': -1.189968899785275,
+#                              'left_e1': 1.9400238130755056,
+#                              'left_s0': 0.58000397926829805,
+#                              'left_s1': -0.9999781166910306}
+#
 #     starting_joint_angles = {'left_w0': 0.3699952259595108,
 #                              'left_w1': -1.030009435085784,
 #                              'left_w2': -2.999997247485215,
@@ -171,16 +185,29 @@ def main():
 #                              'left_s0': -0.18000397926829805,
 #                              'left_s1': -0.4999781166910306}
 #
-
     tk = Task(limb, hover_distance)
 
     # An orientation for gripper fingers to be overhead and parallel to the obj
-    overhead_orientation = Quaternion(
+    overhead_start = Quaternion(
+                             x=0.859512145991,
+                             y=-0.510973150634,
+                             z=-0.0120503637075,
+                             w=-0.000314577239305)
+
+    overhead_end = Quaternion(
+                             x=0.876030936165,
+                             y=-0.481110282735,
+                             z=0.0317752280596,
+                             w=-0.0096451858595)
+
+    overhead = Quaternion(
                              x=-0.0249590815779,
                              y=0.999649402929,
                              z=0.00737916180073,
                              w=0.00486450832011)
-    side_orientation = Quaternion(
+
+
+    side = Quaternion(
                              x=0.702323969299,
                              y=0.0288324448253,
                              z=0.709840848369,
@@ -191,25 +218,22 @@ def main():
 
         # Update the task contexts via perception
         start_pose = Pose(
-            position=Point(x=0.83, y=0.53, z=-0.10),
-            orientation=overhead_orientation)
+            position=Point(x=0.64, y=0.59, z=-0.08),
+            orientation=overhead_end)
 
         end_pose = Pose(
-            position=Point(x=0.80, y=-0.08, z=-0.11),
-            orientation=overhead_orientation)
+            position=Point(x=0.63, y=0.02, z=-0.08),
+            orientation=overhead_end)
 
         obstacles = [Point(0.83, 0.36, 0)]
 
         # Reset the robot pose
         tk.move_to_start(starting_joint_angles)
 
-        tk.pick(start_pose)
-        exit
-
         # Transferring the object via adaptation movement
         print("\nTransferring...")
-        tk.transfer(start_pose, end_pose, obstacles)
-        #tk.transfer_imitation(end_pose)
+        #tk.transfer(start_pose, end_pose, obstacles)
+        tk.transfer_imitation(start_pose, end_pose)
 
         needs_improve = raw_input('Would you like to improve movement? (y/n)')
         if needs_improve == 'y':

@@ -1,4 +1,4 @@
-close all;
+exclose all;
 
 simulation_3D = 1;
 

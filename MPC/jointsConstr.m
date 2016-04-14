@@ -47,19 +47,6 @@ end
 feq = [];
 gradfeq = [];
 
-% feq = zeros(1,h);
-% gradfeq = zeros(length(U),h);
-% 
-% %% Rotation of end_effector constraints
-% [y0_pose,~] = forwardKine(contexts.start_joints);
-% rotY0 = y0_pose(4:7,1);
-% 
-% for i = 1:h
-%     rotYi = rotY((i-1)*4+1:i*4,1);
-%     feq(i) = (rotYi-rotY0)'*(rotYi-rotY0);
-%     gradfeq(:,i) = 2*Pu((i-1)*joints_dim+1:i*joints_dim,:)'*gradRotY((i-1)*4+1:i*4,(i-1)*joints_dim+1:i*joints_dim)'*(rotYi-rotY0);
-% end
-
 %% Terminal state constraint
 if contexts.terminal
     joints_t = (h-1)*joints_dim+1:h*joints_dim;

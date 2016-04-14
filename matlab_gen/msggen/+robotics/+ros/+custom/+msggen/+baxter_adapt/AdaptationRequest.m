@@ -12,7 +12,7 @@ classdef AdaptationRequest < robotics.ros.Message
     end
     
     properties (Constant, Hidden)
-        MD5Checksum = 'd36bea4c95fc568e16dbea973418f05a' % The MD5 Checksum of the message definition
+        MD5Checksum = 'fee91147901babed898e685294d4d227' % The MD5 Checksum of the message definition
     end
     
     properties (Access = protected)
@@ -24,18 +24,19 @@ classdef AdaptationRequest < robotics.ros.Message
     end
     
     properties (Dependent)
-        YStart
-        YEnd
+        EnableAdapt
+        StartJoints
+        EndJoints
         Obstacles
     end
     
     properties (Access = protected)
-        Cache = struct('YStart', [], 'YEnd', [], 'Obstacles', []) % The cache for fast data access
+        Cache = struct('Obstacles', []) % The cache for fast data access
     end
     
     properties (Constant, Hidden)
-        PropertyList = {'Obstacles', 'YEnd', 'YStart'} % List of non-constant message properties
-        ROSPropertyList = {'obstacles', 'y_end', 'y_start'} % List of non-constant ROS message properties
+        PropertyList = {'EnableAdapt', 'EndJoints', 'Obstacles', 'StartJoints'} % List of non-constant message properties
+        ROSPropertyList = {'enable_adapt', 'end_joints', 'obstacles', 'start_joints'} % List of non-constant ROS message properties
     end
     
     methods
@@ -84,44 +85,58 @@ classdef AdaptationRequest < robotics.ros.Message
             end
         end
         
-        function ystart = get.YStart(obj)
-            %get.YStart Get the value for property YStart
-            if isempty(obj.Cache.YStart)
-                obj.Cache.YStart = feval(obj.GeometryMsgsPointClass, obj.JavaMessage.getYStart);
-            end
-            ystart = obj.Cache.YStart;
+        function enableadapt = get.EnableAdapt(obj)
+            %get.EnableAdapt Get the value for property EnableAdapt
+            enableadapt = logical(obj.JavaMessage.getEnableAdapt);
         end
         
-        function set.YStart(obj, ystart)
-            %set.YStart Set the value for property YStart
-            validateattributes(ystart, {obj.GeometryMsgsPointClass}, {'nonempty', 'scalar'}, 'AdaptationRequest', 'ystart');
+        function set.EnableAdapt(obj, enableadapt)
+            %set.EnableAdapt Set the value for property EnableAdapt
+            validateattributes(enableadapt, {'logical', 'numeric'}, {'nonempty', 'scalar'}, 'AdaptationRequest', 'enableadapt');
             
-            obj.JavaMessage.setYStart(ystart.getJavaObject);
-            
-            % Update cache if necessary
-            if ~isempty(obj.Cache.YStart)
-                obj.Cache.YStart.setJavaObject(ystart.getJavaObject);
-            end
+            obj.JavaMessage.setEnableAdapt(enableadapt);
         end
         
-        function yend = get.YEnd(obj)
-            %get.YEnd Get the value for property YEnd
-            if isempty(obj.Cache.YEnd)
-                obj.Cache.YEnd = feval(obj.GeometryMsgsPointClass, obj.JavaMessage.getYEnd);
-            end
-            yend = obj.Cache.YEnd;
+        function startjoints = get.StartJoints(obj)
+            %get.StartJoints Get the value for property StartJoints
+            javaArray = obj.JavaMessage.getStartJoints;
+            array = obj.readJavaArray(javaArray, 'double');
+            startjoints = double(array);
         end
         
-        function set.YEnd(obj, yend)
-            %set.YEnd Set the value for property YEnd
-            validateattributes(yend, {obj.GeometryMsgsPointClass}, {'nonempty', 'scalar'}, 'AdaptationRequest', 'yend');
-            
-            obj.JavaMessage.setYEnd(yend.getJavaObject);
-            
-            % Update cache if necessary
-            if ~isempty(obj.Cache.YEnd)
-                obj.Cache.YEnd.setJavaObject(yend.getJavaObject);
+        function set.StartJoints(obj, startjoints)
+            %set.StartJoints Set the value for property StartJoints
+            if ~isvector(startjoints) && isempty(startjoints)
+                % Allow empty [] input
+                startjoints = double.empty(0,1);
             end
+            
+            validateattributes(startjoints, {'numeric'}, {'vector'}, 'AdaptationRequest', 'startjoints');
+            
+            javaArray = obj.JavaMessage.getStartJoints;
+            array = obj.writeJavaArray(startjoints, javaArray, 'double');
+            obj.JavaMessage.setStartJoints(array);
+        end
+        
+        function endjoints = get.EndJoints(obj)
+            %get.EndJoints Get the value for property EndJoints
+            javaArray = obj.JavaMessage.getEndJoints;
+            array = obj.readJavaArray(javaArray, 'double');
+            endjoints = double(array);
+        end
+        
+        function set.EndJoints(obj, endjoints)
+            %set.EndJoints Set the value for property EndJoints
+            if ~isvector(endjoints) && isempty(endjoints)
+                % Allow empty [] input
+                endjoints = double.empty(0,1);
+            end
+            
+            validateattributes(endjoints, {'numeric'}, {'vector'}, 'AdaptationRequest', 'endjoints');
+            
+            javaArray = obj.JavaMessage.getEndJoints;
+            array = obj.writeJavaArray(endjoints, javaArray, 'double');
+            obj.JavaMessage.setEndJoints(array);
         end
         
         function obstacles = get.Obstacles(obj)
@@ -158,8 +173,6 @@ classdef AdaptationRequest < robotics.ros.Message
     methods (Access = protected)
         function resetCache(obj)
             %resetCache Resets any cached properties
-            obj.Cache.YStart = [];
-            obj.Cache.YEnd = [];
             obj.Cache.Obstacles = [];
         end
         
@@ -175,16 +188,20 @@ classdef AdaptationRequest < robotics.ros.Message
             % Create a new Java message object
             cpObj.JavaMessage = obj.createNewJavaMessage;
             
+            % Iterate over all primitive properties
+            cpObj.EnableAdapt = obj.EnableAdapt;
+            cpObj.StartJoints = obj.StartJoints;
+            cpObj.EndJoints = obj.EndJoints;
+            
             % Recursively copy compound properties
-            cpObj.YStart = copy(obj.YStart);
-            cpObj.YEnd = copy(obj.YEnd);
             cpObj.Obstacles = copy(obj.Obstacles);
         end
         
         function reload(obj, strObj)
             %reload Called by loadobj to assign properties
-            obj.YStart = feval([obj.GeometryMsgsPointClass '.loadobj'], strObj.YStart);
-            obj.YEnd = feval([obj.GeometryMsgsPointClass '.loadobj'], strObj.YEnd);
+            obj.EnableAdapt = strObj.EnableAdapt;
+            obj.StartJoints = strObj.StartJoints;
+            obj.EndJoints = strObj.EndJoints;
             ObstaclesCell = arrayfun(@(x) feval([obj.GeometryMsgsPointClass '.loadobj'], x), strObj.Obstacles, 'UniformOutput', false);
             obj.Obstacles = vertcat(ObstaclesCell{:});
         end
@@ -200,8 +217,9 @@ classdef AdaptationRequest < robotics.ros.Message
                 return
             end
             
-            strObj.YStart = saveobj(obj.YStart);
-            strObj.YEnd = saveobj(obj.YEnd);
+            strObj.EnableAdapt = obj.EnableAdapt;
+            strObj.StartJoints = obj.StartJoints;
+            strObj.EndJoints = obj.EndJoints;
             strObj.Obstacles = arrayfun(@(x) saveobj(x), obj.Obstacles);
         end
     end

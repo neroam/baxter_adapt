@@ -1,27 +1,28 @@
 function [f, feq, gradf, gradfeq] = projectConstr(U, contexts)
 
 [dim,k] = size(contexts.obstacles);
+joints_dim = size(contexts.refTraj,2);
 
 f = zeros(1,length(U) - dim*k);
 gradf = zeros(length(U),length(U) - dim*k);
-feq = zeros(1,k);
-gradfeq = zeros(length(U),k);
+feq = [];
+gradfeq = [];
 
 %% Constraints of demonstration weights
-for i = 1:dim
+for i = 1:joints_dim
     f(i) = -U(i);
     gradf(i,i) = -1;
 end
 
 
 %% Constraints of smooth weights
-i = dim +1;
+i = joints_dim +1;
 f(i) = -U(i);
 gradf(i,i) = -1;
 
 
 %% Constraints of obstacle direction vector
-offset = dim+1;
+offset = joints_dim+1;
 
 for j = 1:k
 %     wk = U(offset+(j-1)*(dim+2)+3:offset+j*(dim+2),1);
@@ -30,7 +31,6 @@ for j = 1:k
     
     f(offset+(j-1)*2+1:offset+j*2) = -U(offset+(j-1)*(dim+2)+1:offset+(j-1)*(dim+2)+2);
     gradf(offset+(j-1)*(dim+2)+1:offset+(j-1)*(dim+2)+2,offset+(j-1)*2+1:offset+j*2) = -diag([1,1]);
-    
 end
 
 %% Constraints for boarder feature & safety feature

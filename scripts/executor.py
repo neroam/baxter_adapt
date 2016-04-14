@@ -151,6 +151,9 @@ class Executor(object):
         self._gripper.close()
         rospy.sleep(1.0)
 
+    def joint_names(self):
+        return self._limb.joint_names()
+
     def move_to_pose(self, pose):
         joint_angles = self.ik_request(pose)
         self._guarded_move_to_joint_position(joint_angles)

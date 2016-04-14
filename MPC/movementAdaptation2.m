@@ -1,4 +1,4 @@
-function [y_adapted, joints, refTraj]=movementAdaptation2(y_end, weights, contexts)
+function [y_adapted, joints, refTraj]=movementAdaptation2(y_end, weights, contexts, config)
 
 % y_start = forwardKine(contexts.start_joints);
 
@@ -22,7 +22,7 @@ lw = 2;
 %% Contexts initialization
 contexts.refTraj = refTraj;
 contexts.refVar = refVar;
-contexts.boarder = [-0.2 1.1];
+contexts.boarder = [0.8 -0.2];
 contexts.ground = -0.2;
 
 %contexts.obstacles = [0.84, 0.29, -0.02]';
@@ -30,11 +30,9 @@ contexts.ground = -0.2;
 %% Generate adapted trajectory
 [y_adapted, joints, ~] = jointsTraj(contexts, weights, config);
 
-% filename = [pwd,'/generated/adaptationTrajectory'];
-% writeTrajectory(filename, y_adapted');
-
+filename = [pwd,'/generated/adaptedJoints'];
+writeTrajectoryJoints(filename, joints');
     
-
  for i = 1:size(refTraj,1)
      refTraj(i,:) = forwardKine(refTraj(i,:)')';
  end

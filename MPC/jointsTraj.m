@@ -1,6 +1,9 @@
 function [ y_adapted, joints, cost ] = jointsTraj(contexts, weights, config)
 % Generate adapted trajectory
 
+global y_adapt;
+global joints_adapt;
+
 %% Contexts extraction
 y_ref = contexts.refTraj;
 [T, dim] = size(y_ref); 
@@ -25,7 +28,6 @@ C = diag(ones(joints_dim,1));
 h = config.horizon;
 step = config.step;
 umax = config.umax;
-
 
 %%% Initialization
 y_adapted = zeros(T, 7);
@@ -113,6 +115,12 @@ for j = step+2:h
     [pose, ~,~] = forwardKine(joints(i+j,:)');
     y_adapted(i+j,:) = pose';
 end
+
+joints_adapt = joints;
+y_adapt = y_adapted;
+
+filename = contexts.filename;
+writeTrajectoryJoints(filename, joints');
 
 end
 
