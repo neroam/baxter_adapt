@@ -4,6 +4,7 @@ clc;
     
 synthetic = 0;
 datasets = prepareData(synthetic);
+% datasets = datasets(1);
 [DOF,T] = size(datasets(1).Ymat);
 lambdaProMPs = 1e-5; %regularization parameter to avoid singularities
 
@@ -19,7 +20,7 @@ flgPlotData = 0;
 %% Predict future trajectory points given some observations
 % for simplicity, one of the training traj. is used
 datasetsTest = datasets;
-lTestId = 2;
+lTestId = 1;
 
 y_start = datasets(lTestId).Ymat(:,1);
 y_end = datasets(lTestId).Ymat(:,T);
@@ -37,7 +38,7 @@ plot_imitation(y_prior,y_predProMPsMat,y_testMat,datasetsTest(lTestId));
 
 %% Save trained data
 loaded = 1;
-save('trainedData_joints2.mat', 'DOF','lambdaProMPs','PSI_X','T','wsProMPsPrior','y_prior','loaded');
+save('trainedData_joints_all.mat', 'DOF','lambdaProMPs','PSI_X','T','wsProMPsPrior','y_prior','loaded');
 
 
 

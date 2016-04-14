@@ -66,32 +66,34 @@ class Task(object):
         retract.position.z = retract.position.z + self._hover_distance
         self._executor.move_to_pose(retract)
 
-    def transfer(self, pose_start, pose_end, obstacles):
+    def transfer(self, start_pose, end_pose, obstacles):
 
-        # request Matlab to compute trajectory
-        y_start = pose_start.position
-        y_end = pose_end.position
+        print("Picking up the object")
+        self.pick(start_pose)
+
+        joint_names = self._executor.joint_names()
+        joints = self._executor.ik_request(start_pose)
+        start_joints = [joints[i] for i in joint_names]
+        joints = self._executor.ik_request(end_pose)
+        end_joints = [joints[i] for i in joint_names]
+
+        print start_joints
+        print end_joints
 
         print "Adapting Trajectory Learned from Demonstrations"
-        resp = self._trajsvc(y_start, y_end, obstacles)
+        #resp = self._trajsvc(start_joints, end_joints, obstacles, True)
+        resp = AdaptationResponse()
+        resp.filename = '/home/aecins/ros_ws/src/baxter_adapt/MPC/generated/JointsTrajectory'
+        resp.response = True
         print resp
 
-        while os.path.isfile(resp.filename) is False:
-            print "Wait for trajectory generation"
-            rospy.sleep(2.0)
-
-        print("Calculating Trajectory: %s" % (resp.filename,))
-        traj = self._executor.ik_trajectory(resp.filename, resp.filename + '_joints', pose_start)
-
-        self.pick(pose_start)
-        rospy.sleep(1.0)
-        self._executor.move_as_trajectory(traj)
-        rospy.sleep(1.0)
-        self.place(pose_end)
-
-        #if resp.response is True:
-            # perform the trajectory via Inverse Kinematics
-            #self._executor.move_as_trajectory(resp.filename)
+        if resp.response is True:
+            while os.path.isfile(resp.filename) is False:
+                print "Wait for trajectory generation"
+                rospy.sleep(2.0)
+            print("Perform trajectory")
+            traj = open(resp.filename, 'r').readlines()
+            self._executor.move_as_trajectory(traj)
 
     def transfer_imitation(self, start_pose, end_pose):
         print("Picking up the object")
@@ -115,6 +117,9 @@ class Task(object):
             print("Perform trajectory")
             traj = open(resp.filename, 'r').readlines()
             self._executor.move_as_trajectory(traj)
+
+    def get_current_pose(self):
+        return self._executor.get_current_pose()
 
     def pick(self, pose):
         # open the gripper
@@ -156,7 +161,7 @@ def main():
     rospy.init_node("baxter_adapt_demo")
     print "Initializing..."
 
-    rospy.wait_for_message("/robot/sim/started", Empty)
+    #rospy.wait_for_message("/robot/sim/started", Empty)
 
     limb = 'left'
     hover_distance = 0 # meters
@@ -216,24 +221,30 @@ def main():
     print "Ready to go!"
     while not rospy.is_shutdown():
 
-        # Update the task contexts via perception
-        start_pose = Pose(
-            position=Point(x=0.64, y=0.59, z=-0.08),
-            orientation=overhead_end)
-
-        end_pose = Pose(
-            position=Point(x=0.63, y=0.02, z=-0.08),
-            orientation=overhead_end)
-
-        obstacles = [Point(0.83, 0.36, 0)]
-
         # Reset the robot pose
-        tk.move_to_start(starting_joint_angles)
+#         tk.move_to_start(starting_joint_angles)
+
+        # Update the task contexts via perception
+#         start_pose = Pose(
+#             position=Point(x=0.64, y=0.59, z=-0.08),
+#             orientation=overhead_end)
+#
+#         end_pose = Pose(
+#             position=Point(x=0.63, y=0.02, z=-0.08),
+#             orientation=overhead_end)
+#
+        start_pose = tk.get_current_pose()
+
+        end_pose = copy.deepcopy(start_pose)
+        end_pose.position.x += 0
+        end_pose.position.y -= 0.45
+
+        obstacles = [Point(0.69, 0.52, -0.07)]
 
         # Transferring the object via adaptation movement
         print("\nTransferring...")
-        #tk.transfer(start_pose, end_pose, obstacles)
-        tk.transfer_imitation(start_pose, end_pose)
+        tk.transfer(start_pose, end_pose, obstacles)
+        #tk.transfer_imitation(start_pose, end_pose)
 
         needs_improve = raw_input('Would you like to improve movement? (y/n)')
         if needs_improve == 'y':

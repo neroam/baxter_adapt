@@ -3,7 +3,7 @@ function [y_predVar, y_predProMPsMat, filename]=movementImitation(target, contex
 close all;
 
 if exist('loaded','var') == 0
-    load('trainedData_joints2.mat');
+    load('trainedData_joints_all.mat');
 end
 
 [y_predProMPs, y_predProMPsMat, sigma_starProMPs, y_testMat] = testing(PSI_X, contexts.start_joints, target, wsProMPsPrior,lambdaProMPs, T, DOF);
