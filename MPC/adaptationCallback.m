@@ -21,12 +21,9 @@ function resp = adaptationCallback(server,req,resp)
     target = reshape(req.EndJoints(1:7),7,1);
  
     %%% Movement Imitation
-    [y_predVar, y_predProMPsMat]=movementImitation(target, contexts);
+    [y_predVar, y_predProMPsMat, y_imit]=movementImitation(target, contexts);
     
-    joints_imit = y_predVar';
-    for i = 1:size(joints_imit,1)
-        y_imit(i,:) = forwardKine(joints_imit(i,:)')';
-    end
+    joints_imit = y_predProMPsMat';
     
     joints_adapt = joints_imit;
     y_adapt = y_imit;
@@ -35,9 +32,6 @@ function resp = adaptationCallback(server,req,resp)
     if req.EnableAdapt
         delete(resp.Filename);
         display('Cache deleted');
-        
-        refTraj = y_predProMPsMat';
-        refVar = y_predVar';
 
         num_obst = length(req.Obstacles);
         contexts.obstacles = zeros(3, num_obst);    
@@ -55,11 +49,15 @@ function resp = adaptationCallback(server,req,resp)
         weights
 
         %% Contexts initialization
-        contexts.refTraj = refTraj;
-        contexts.refVar = refVar;
+        contexts.refTraj = y_predProMPsMat';
+        contexts.refVar = y_predVar';
     
         parfeval(@jointsTraj,1,contexts, weights, config);
+    else
+        filename = contexts.filename;
+        writeTrajectoryJoints(filename, y_predProMPsMat);
     end
+        
        
     resp.Response = 1;
 end

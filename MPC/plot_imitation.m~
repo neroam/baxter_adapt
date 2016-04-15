@@ -1,4 +1,4 @@
-function y_imit = plot_imitation(y_prior,y_predProMPsMat,y_testMat, datasetsTest)
+function y_predProMPsMat = plot_imitation(y_prior,y_predProMPsMat,y_testMat, datasetsTest)
 
 DOF = size(y_prior,2);
 fs = 26;
@@ -32,7 +32,6 @@ else if DOF >= 3
         for i = 1:size(y_testMat,2)
             y_testMat(:,i) = forwardKine(y_testMat(:,i));
         end
-        y_imit = y_predProMPsMat';
         
         prior_plot=plot3(y_prior(:,1)', y_prior(:,2)', y_prior(:,3)', '--','linewidth',lw*2);
         hold all;

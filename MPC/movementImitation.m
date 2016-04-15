@@ -1,4 +1,4 @@
-function [y_predVar, y_predProMPsMat, filename]=movementImitation(target, contexts)
+function [y_predVar, y_predProMPsMat, y_imit]=movementImitation(target, contexts)
 
 close all;
 
@@ -8,9 +8,6 @@ end
 
 [y_predProMPs, y_predProMPsMat, sigma_starProMPs, y_testMat] = testing(PSI_X, contexts.start_joints, target, wsProMPsPrior,lambdaProMPs, T, DOF);
 
-filename = contexts.filename;
-writeTrajectoryJoints(filename, y_predProMPsMat);
-
 y_predVar = reshape(y_predProMPsMat, DOF, T);
 % %% Plot the predictive distribution 
 % ProMPs_plot_prediction(y_predProMPs, sigma_starProMPs, PSI_X, ...
@@ -18,6 +15,6 @@ y_predVar = reshape(y_predProMPsMat, DOF, T);
 
 
 %% Plot the imitation trajectory
-plot_imitation(y_prior,y_predProMPsMat,y_testMat)
+y_imit = plot_imitation(y_prior,y_predProMPsMat,y_testMat);
 
 end
