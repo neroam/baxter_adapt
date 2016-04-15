@@ -29,7 +29,7 @@ y_end = datasets(lTestId).Ymat(:,T);
 
 %% Plot the predictive distribution 
 [~, y_predVar] = ProMPs_plot_prediction(y_predProMPs, sigma_starProMPs, PSI_X, ...
-    lambdaProMPs, T, DOF, y_testMat, y_predProMPsMat);
+    lambdaProMPs, T, DOF, y_testMat, y_predProMPsMat,datasetsTest(lTestId));
 
 %% Plot the imitation trajectory
 % plot_imitation(y_prior,y_predProMPsMat,y_testMat);
