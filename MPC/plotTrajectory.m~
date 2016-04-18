@@ -7,8 +7,10 @@ fs = 26;
 figure;
 imitation=plot3(y_imit(:,1)', y_imit(:,2)', y_imit(:,3)' ,'-.','linewidth',lw*2);
 hold on;
+adapt=plot3(y_adapt(:,1)', y_adapt(:,2)', y_adapt(:,3)','linewidth',lw*2);
 objects=scatter3(contexts.obstacles(1,:),contexts.obstacles(2,:),contexts.obstacles(3,:),100,'xb','linewidth',4);
 % object2=scatter3(contexts.obstacles(1,2),contexts.obstacles(2,2),contexts.obstacles(3,1), 100, 'ob', 'linewidth',4);
+lhndLegend=legend([imitation, adapt,objects], 'Imitation Trajectory','Adaptation Trajectory','Obstacles');
 xlabel('X (m)', 'fontsize', fs);
 ylabel('Y (m)', 'fontsize', fs);
 zlabel('Z (m)', 'fontsize', fs);
@@ -20,14 +22,8 @@ y = y*r+contexts.obstacles(2);
 z = z*r+contexts.obstacles(3);
 surface(x,y,z,'FaceColor','none','EdgeColor',[0.8,0.8,0.8]);
 
-if nargin < 4
-    adapt=plot3(y_adapt(:,1)', y_adapt(:,2)', y_adapt(:,3)','linewidth',lw*2);
-    lhndLegend=legend([imitation, adapt,objects], 'Imitation Trajectory','Adaptation Trajectory','Obstacles');
-else
-   adapt=plot3(y_adapt(:,1)', y_adapt(:,2)', y_adapt(:,3)','--','linewidth',lw*2);
-   improved = plot3(y_improved(:,1)', y_improved(:,2)', y_improved(:,3)','linewidth',lw*2);
-   lhndLegend=legend([imitation, adapt,improved, objects], 'Imitation Trajectory','Previous Adaptation Trajectory','Improved Trajectory','Obstacles');
-end
+if improve
+
 
 set(lhndLegend, 'fontsize', fs);
 set(gca, 'fontsize', fs);
