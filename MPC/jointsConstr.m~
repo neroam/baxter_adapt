@@ -49,8 +49,10 @@ for i = 1:h
     t = (i-1)*pose_dim+3;
     joints_t = (i-1)*joints_dim+1:i*joints_dim;
     yt = Y(t,1);
-    f(h*k+i) = contexts.ground - yt;
-    gradf(:,h*k+i) = -Pu(joints_t,:)'*gradY(t,joints_t)';
+    f(h*k+i) = yt;
+    gradf(:,(j-1)*h+i) = -2*Pu(joints_t,:)'*gradY(t,joints_t)'*(yt-obst);
+
+
 end
 
 
@@ -59,10 +61,6 @@ gradfeq = [];
 
 %% Terminal state constraint
 if contexts.terminal
-    
-    f(h*k+h) = 0;
-    gradf(:,h*k+h) = 0;
-    
     joints_t = (h-1)*joints_dim+1:h*joints_dim;
     yh = Y_joints(joints_t,1);
     feq = [feq (yh-contexts.refTraj')'*(yh-contexts.refTraj')];

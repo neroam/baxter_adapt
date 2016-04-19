@@ -14,11 +14,14 @@ w_improved = weights;
 feature_improved = 0;
 feature_orig = 0;
 for t = 2:1+h
-    feature_improved = feature_improved + ((y_improved(t,:)-y_ref(t,:)).^2)'.*contexts.refVar(t,:)';
-    feature_orig = feature_orig + ((y(t,:)-y_ref(t,:)).^2)'.*contexts.refVar(t,:)';
+    feature_improved = feature_improved - ((y_improved(t,:)-y_ref(t,:)).^2)';
+    feature_orig = feature_orig - ((y(t,:)-y_ref(t,:)).^2)';
+    
+%     feature_improved = feature_improved + ((y_improved(t,:)-y_ref(t,:)).^2)'.*contexts.refVar(t,:)';
+%     feature_orig = feature_orig + ((y(t,:)-y_ref(t,:)).^2)'.*contexts.refVar(t,:)';
 end
 
-w_improved(1:joints_dim) = weights(1:joints_dim,1) + r*phi*(feature_improved - feature_orig);
+w_improved(1:joints_dim) = weights(1:joints_dim,1) + r*phi*(feature_improved - feature_orig)/h;
 
 %% Update weights for smooth feature
 feature_improved = 0;

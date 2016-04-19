@@ -120,9 +120,7 @@ end
 joints_adapt = joints;
 y_adapt = y_adapted;
 
-if exist(contexts.filename,'var')
-    writeTrajectoryJoints(contexts.filename, joints');
-end
+writeTrajectoryJoints(contexts.filename, joints');
 
 end
 

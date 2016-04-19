@@ -21,9 +21,9 @@ function resp = learningCallback(server,req,resp)
 
     weights = learningWeights(joints_adapt, joints_improved, contexts, weights, config);
     
-    resp.Filename = contexts.filename;
-    delete(resp.Filename);
-    display('Cache deleted');
+%     resp.Filename = contexts.filename;
+%     delete(resp.Filename);
+%     display('Cache deleted');
     
     resp.Response = 1;
     

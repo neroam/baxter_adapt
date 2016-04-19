@@ -118,6 +118,9 @@ class Task(object):
             traj = open(resp.filename, 'r').readlines()
             self._executor.move_as_trajectory(traj)
 
+    def get_current_joints(self):
+        return self._executor.get_current_joints()
+
     def get_current_pose(self):
         return self._executor.get_current_pose()
 
@@ -166,14 +169,24 @@ def main():
     limb = 'left'
     hover_distance = 0 # meters
     # Starting Joint angles for left arm
-    starting_joint_angles = {'left_w0': -0.23009711792,
-                             'left_w1': 0.749733109222,
-                             'left_w2': -1.41164581844,
-                             'left_e0': 0.192131093463,
-                             'left_e1': 1.27051958611,
-                             'left_s0': -0.37275733103,
-                             'left_s1': -0.415325297845}
 
+    # bowl bottle experiment
+    starting_joint_angles = {'left_w0': -0.4649,
+                             'left_w1': -0.3395,
+                             'left_w2': 0.3267,
+                             'left_e0': 1.2276,
+                             'left_e1': -0.4221,
+                             'left_s0': 0.7814,
+                             'left_s1': 0.7059}
+
+#     starting_joint_angles = {'left_w0': -0.23009711792,
+#                              'left_w1': 0.749733109222,
+#                              'left_w2': -1.41164581844,
+#                              'left_e0': 0.192131093463,
+#                              'left_e1': 1.27051958611,
+#                              'left_s0': -0.37275733103,
+#                              'left_s1': -0.415325297845}
+#
 #     starting_joint_angles = {'left_w0': 0.6699952259595108,
 #                              'left_w1': 1.030009435085784,
 #                              'left_w2': -0.4999997247485215,
@@ -219,6 +232,21 @@ def main():
                              w=0.0451187572977)
 
     print "Ready to go!"
+
+    start_pose = tk.get_current_pose()
+    end_pose = copy.deepcopy(start_pose)
+#bowlbottle before learning
+#    end_pose.position.x += 0.1
+ #   end_pose.position.y -= 0.4
+#bowlbottle after learning
+    end_pose.position.x += 0.15
+    end_pose.position.y -= 0.45
+
+    # bowl bottle experiment
+    obstacles = [Point(0.72, 0.46, -0.07)]
+    #after learning
+    #obstacles = [Point(0.66, 0.30, -0.07)]
+
     while not rospy.is_shutdown():
 
         # Reset the robot pose
@@ -233,13 +261,6 @@ def main():
 #             position=Point(x=0.63, y=0.02, z=-0.08),
 #             orientation=overhead_end)
 #
-        start_pose = tk.get_current_pose()
-
-        end_pose = copy.deepcopy(start_pose)
-        end_pose.position.x += 0
-        end_pose.position.y -= 0.45
-
-        obstacles = [Point(0.69, 0.52, -0.07)]
 
         # Transferring the object via adaptation movement
         print("\nTransferring...")

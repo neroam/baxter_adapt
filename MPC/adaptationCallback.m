@@ -25,13 +25,14 @@ function resp = adaptationCallback(server,req,resp)
     
     joints_imit = y_predProMPsMat';
     
-    joints_adapt = joints_imit;
-    y_adapt = y_imit;
+    
    
     %%% Movement Adaptation
     if req.EnableAdapt
         delete(resp.Filename);
         display('Cache deleted');
+        joints_adapt = [];
+        y_adapt = [];
 
         num_obst = length(req.Obstacles);
         contexts.obstacles = zeros(3, num_obst);    

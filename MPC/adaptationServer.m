@@ -24,15 +24,15 @@ global y_improved;
 global target;
 
 pool = gcp;
-weights = [];
-contexts = [];
-config = [];
 joints_imit = [];
 joints_adapt = [];
 joints_improved = [];
 y_imit = [];
 y_adapt = [];
 y_improved = [];
+weights = [];
+contexts = [];
+config = [];
 target = [];
 
 %% Configuration
@@ -45,5 +45,5 @@ config.alpha = 1;
 config.dboarder = 0.01;
 
 %% Contexts initialization
-contexts.boarder = [0.8 -0.2];
-contexts.ground = -0.2;
+contexts.boarder = [1 -0.2];
+contexts.ground = -0.1;

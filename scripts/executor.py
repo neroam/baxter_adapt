@@ -170,7 +170,7 @@ class Executor(object):
 
         start_time = rospy.get_time()
         step = 1
-        for i in xrange(1, len(lines)-1, step):
+        for i in xrange(1, len(lines), step):
             values = lines[i]
             sys.stdout.write("\r Trajectory %d of %d" %
                              (i, len(lines) - 1))
