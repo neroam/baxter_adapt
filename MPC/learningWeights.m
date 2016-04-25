@@ -21,7 +21,7 @@ for t = 2:1+h
 %     feature_orig = feature_orig + ((y(t,:)-y_ref(t,:)).^2)'.*contexts.refVar(t,:)';
 end
 
-w_improved(1:joints_dim) = weights(1:joints_dim,1) + r*phi*(feature_improved - feature_orig)/h;
+w_improved(1:joints_dim) = weights(1:joints_dim,1) + r*phi*(feature_improved - feature_orig);
 
 %% Update weights for smooth feature
 feature_improved = 0;

@@ -34,16 +34,32 @@ else if DOF >= 3
         end
         y_imit = y_predProMPsMat';
         
-        prior_plot=plot3(y_prior(:,1)', y_prior(:,2)', y_prior(:,3)', '-.','linewidth',lw);
-        hold all;
-        est_plot=plot3(y_predProMPsMat(1,:), y_predProMPsMat(2,:), y_predProMPsMat(3,:),'linewidth',lw*2);
-        hObs=scatter3(y_testMat(1,:), y_testMat(2,:), y_testMat(3,:), 100, 'xb', 'linewidth',lw*2);
-        
         xlabel('X (m)', 'fontsize', fs);
         ylabel('Y (m)', 'fontsize', fs);
         zlabel('Z (m)', 'fontsize', fs);
         
+        prior_plot=plot3(y_prior(:,1)', y_prior(:,2)', y_prior(:,3)', '-.b','linewidth',lw);
+        hold on;
+        est_plot=plot3(y_predProMPsMat(1,:), y_predProMPsMat(2,:), y_predProMPsMat(3,:),'-r','linewidth',lw*2);
+        hObs=scatter3(y_testMat(1,:), y_testMat(2,:), y_testMat(3,:), 100, 'og', 'linewidth',lw*2);
         lhndLegend=legend([prior_plot,est_plot,hObs], 'Prior Mean Trajectory','Predicted Mean Trajectory','Task Contexts');
+
+
+        global contexts;
+        
+        objects=scatter3(contexts.obstacles(1,:),contexts.obstacles(2,:),contexts.obstacles(3,:),100,'xb','linewidth',4); 
+        r = 0.1;
+        [x,y,z] = sphere(30);
+        x = x*r+contexts.obstacles(1);
+        y = y*r+contexts.obstacles(2);
+        z = z*r+contexts.obstacles(3);
+        surface(x,y,z,'FaceColor','none','EdgeColor',[0.8,0.8,0.8]);
+        
+        hObs.MarkerEdgeColor = [0, 1,0 ];
+        
+        lhndLegend=legend([prior_plot,est_plot,hObs,objects], 'Prior Mean Trajectory','Predicted Mean Trajectory','Task Contexts','Obstacle');
+
+        
         
         if nargin == 4
             for i = 1:size(datasetsTest.Ymat,2)
