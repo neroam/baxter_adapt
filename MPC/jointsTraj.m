@@ -12,8 +12,8 @@ y_ref = contexts.refTraj;
 y_refVar = contexts.refVar;
 for i = 1:dim
 %     y_refVar(:,i) = 1 ./ exp(T * contexts.refVar(:,i) / sum(contexts.refVar(:,i), 1));
-%     y_refVar(:,i) =  exp(-contexts.refVar(:,i));
-    y_refVar(:,i) = 1;
+    y_refVar(:,i) =  exp(-contexts.refVar(:,i));
+%     y_refVar(:,i) = 1;
 end
 
 joints_dim = 7;
@@ -120,7 +120,7 @@ end
 joints_adapt = joints;
 y_adapt = y_adapted;
 
-writeTrajectoryJoints(contexts.filename, joints');
+% writeTrajectoryJoints(contexts.filename, joints');
 
 end
 

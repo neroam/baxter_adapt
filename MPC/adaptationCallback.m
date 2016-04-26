@@ -25,7 +25,6 @@ function resp = adaptationCallback(server,req,resp)
     
     joints_imit = y_predProMPsMat';
     
-    
    
     %%% Movement Adaptation
     if req.EnableAdapt

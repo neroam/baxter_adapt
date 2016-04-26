@@ -13,12 +13,18 @@ w_improved = weights;
 %% Update weights for demo feature
 feature_improved = 0;
 feature_orig = 0;
+
+y_refVar = contexts.refVar;
+for i = 1:joints_dim
+    y_refVar(:,i) =  exp(-contexts.refVar(:,i));
+end
+
 for t = 2:1+h
-    feature_improved = feature_improved - ((y_improved(t,:)-y_ref(t,:)).^2)';
-    feature_orig = feature_orig - ((y(t,:)-y_ref(t,:)).^2)';
+%     feature_improved = feature_improved - ((y_improved(t,:)-y_ref(t,:)).^2)';
+%     feature_orig = feature_orig - ((y(t,:)-y_ref(t,:)).^2)';
     
-%     feature_improved = feature_improved + ((y_improved(t,:)-y_ref(t,:)).^2)'.*contexts.refVar(t,:)';
-%     feature_orig = feature_orig + ((y(t,:)-y_ref(t,:)).^2)'.*contexts.refVar(t,:)';
+    feature_improved = feature_improved + ((y_improved(t,:)-y_ref(t,:)).^2)'.*y_refVar(t,:)';
+    feature_orig = feature_orig + ((y(t,:)-y_ref(t,:)).^2)'.*y_refVar(t,:)';
 end
 
 w_improved(1:joints_dim) = weights(1:joints_dim,1) + r*phi*(feature_improved - feature_orig);
@@ -100,9 +106,6 @@ w_improved(offset+1,1) = w_improved(offset+1,1) + feature_change;
 
 
 %% Project new weights to convex set.
-%%% all weights should be >= 0 except for those deviation vectors for
-%%% avoiding obstacles.
-
 %% Using fmincon
 options = optimoptions(@fmincon,'Algorithm','interior-point',...
     'GradObj','on','GradConstr','on');
