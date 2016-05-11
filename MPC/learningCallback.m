@@ -10,10 +10,13 @@ function resp = learningCallback(server,req,resp)
     global y_imit;
     global y_adapt;
     global y_improved;
+    global target;
     
     data = csvread(req.Filename, 1, 0);
     joints_improved= preprocess(data(:,9:15)');
     joints_improved = joints_improved(:,round(linspace(1,size(joints_improved,2),size(joints_adapt,1))))';
+    joints_improved(1,:) = contexts.start_joints;
+    joints_improved(end,:) = target;
     
     for i = 1:size(joints_improved,1)
         y_improved(i,:) = forwardKine(joints_improved(i,:)')';

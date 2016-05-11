@@ -5,8 +5,8 @@ y_ref = contexts.refTraj;
 [T, joints_dim] = size(y_ref); 
 h = T - 1;
 r = config.alpha;
-% phi = 1/sqrt(contexts.iteration);
-phi = 1;
+phi = 1/sqrt(contexts.iteration);
+% phi = 1;
 
 w_improved = weights;
 
@@ -23,11 +23,11 @@ for t = 2:1+h
 %     feature_improved = feature_improved - ((y_improved(t,:)-y_ref(t,:)).^2)';
 %     feature_orig = feature_orig - ((y(t,:)-y_ref(t,:)).^2)';
     
-    feature_improved = feature_improved + ((y_improved(t,:)-y_ref(t,:)).^2)'.*y_refVar(t,:)';
-    feature_orig = feature_orig + ((y(t,:)-y_ref(t,:)).^2)'.*y_refVar(t,:)';
+    feature_improved = feature_improved - ((y_improved(t,:)-y_ref(t,:)).^2)'.*y_refVar(t,:)';
+    feature_orig = feature_orig - ((y(t,:)-y_ref(t,:)).^2)'.*y_refVar(t,:)';
 end
 
-w_improved(1:joints_dim) = weights(1:joints_dim,1) + r*phi*(feature_improved - feature_orig);
+w_improved(1:joints_dim) = weights(1:joints_dim,1) + r*phi*(feature_improved - feature_orig)/h;
 
 %% Update weights for smooth feature
 feature_improved = 0;
@@ -99,9 +99,9 @@ feature_change = 0;
 for t = 1:h
     yt = Y(t,:)';
     yt_improved = Y_improved(t,:)';
-    feature_change = feature_change + (-((yt_improved(3)-contexts.ground).^2) + ((yt(3)-contexts.ground).^2))/h;
+    feature_change = feature_change + (-((yt_improved(3)-contexts.ground).^2) + ((yt(3)-contexts.ground).^2));
 end
-w_improved(offset+1,1) = w_improved(offset+1,1) + feature_change;
+w_improved(offset+1,1) = w_improved(offset+1,1) + feature_change/h;
 
 
 

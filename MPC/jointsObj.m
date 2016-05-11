@@ -39,8 +39,8 @@ for i = 1:h
 end
 W = blkdiag(A{:});
 
-f = (Y_joints-refTraj)'*W*(Y_joints-refTraj);
-g = 2*Pu'*W*(Y_joints-refTraj);
+f = (Y_joints-refTraj)'*W*(Y_joints-refTraj)/h;
+g = 2*Pu'*W*(Y_joints-refTraj)/h;
 
 %%% Smooth feature
 W = weights(joints_dim+1,1);

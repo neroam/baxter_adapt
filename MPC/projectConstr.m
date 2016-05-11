@@ -10,7 +10,7 @@ gradfeq = [];
 
 %% Constraints of demonstration weights
 for i = 1:joints_dim
-    f(i) = -U(i);
+    f(i) = 1-U(i);
     gradf(i,i) = -1;
 end
 
