@@ -120,7 +120,7 @@ end
 joints_adapt = joints;
 y_adapt = y_adapted;
 
-% writeTrajectoryJoints(contexts.filename, joints');
+writeTrajectoryJoints(contexts.filename, joints');
 
 end
 

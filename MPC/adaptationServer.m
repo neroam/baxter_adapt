@@ -45,5 +45,5 @@ config.alpha = 1;
 config.dboarder = 0.01;
 
 %% Contexts initialization
-contexts.boarder = [1 -0.2];
+contexts.boarder = [1 -1];
 contexts.ground = -0.1;

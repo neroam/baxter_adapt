@@ -81,10 +81,10 @@ class Task(object):
         print end_joints
 
         print "Adapting Trajectory Learned from Demonstrations"
-        #resp = self._trajsvc(start_joints, end_joints, obstacles, True)
-        resp = AdaptationResponse()
-        resp.filename = '/home/aecins/ros_ws/src/baxter_adapt/MPC/generated/JointsTrajectory'
-        resp.response = True
+        resp = self._trajsvc(start_joints, end_joints, obstacles, True)
+#         resp = AdaptationResponse()
+#         resp.filename = '/home/aecins/ros_ws/src/baxter_adapt/MPC/generated/JointsTrajectory'
+#         resp.response = True
         print resp
 
         if resp.response is True:
@@ -250,7 +250,7 @@ def main():
     while not rospy.is_shutdown():
 
         # Reset the robot pose
-#         tk.move_to_start(starting_joint_angles)
+        tk.pick(start_pose)
 
         # Update the task contexts via perception
 #         start_pose = Pose(

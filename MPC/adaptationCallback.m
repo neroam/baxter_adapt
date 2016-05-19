@@ -19,6 +19,12 @@ function resp = adaptationCallback(server,req,resp)
     %%% Process request
     contexts.start_joints = reshape(req.StartJoints(1:7),7,1);
     target = reshape(req.EndJoints(1:7),7,1);
+    
+    num_obst = length(req.Obstacles);    
+    contexts.obstacles = zeros(3, num_obst);    
+    for i = 1:num_obst
+        contexts.obstacles(:,i) = [req.Obstacles(i).X, req.Obstacles(i).Y, req.Obstacles(i).Z]'; 
+    end
  
     %%% Movement Imitation
     [y_predVar, y_predProMPsMat, y_imit]=movementImitation(target, contexts);
@@ -33,17 +39,11 @@ function resp = adaptationCallback(server,req,resp)
         joints_adapt = [];
         y_adapt = [];
 
-        num_obst = length(req.Obstacles);
-        contexts.obstacles = zeros(3, num_obst);    
-        for i = 1:num_obst
-           contexts.obstacles(:,i) = [req.Obstacles(i).X, req.Obstacles(i).Y, req.Obstacles(i).Z]'; 
-        end
-
         num_weights = 8 + 5*num_obst + 2; 
 
         if exist('weights','var') == 0 || num_weights ~= length(weights)
             display('Initialzie weights');
-            weights = [zeros(1,7)+10,10, zeros(1,5*num_obst), 0, 0]';
+            weights = [zeros(1,7)+30,30, zeros(1,5*num_obst), 0, 0]';
         end
 
         weights
