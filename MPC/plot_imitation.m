@@ -1,7 +1,7 @@
 function y_imit = plot_imitation(y_prior,y_predProMPsMat,y_testMat, datasetsTest)
 
 DOF = size(y_prior,2);
-fs = 32;
+fs = 26;
 lw = 2;
 set(figure,'Color','white');
 y_imit = [];
@@ -59,7 +59,9 @@ else if DOF >= 3
         
         lhndLegend=legend([prior_plot,est_plot,hObs,objects], 'Prior Mean Trajectory','Predicted Mean Trajectory','Task Contexts','Obstacle');
 
-        
+        xlabel('X (m)', 'fontsize', fs);
+        ylabel('Y (m)', 'fontsize', fs);
+        zlabel('Z (m)', 'fontsize', fs);
         
         if nargin == 4
             for i = 1:size(datasetsTest.Ymat,2)
