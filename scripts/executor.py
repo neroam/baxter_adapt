@@ -51,7 +51,7 @@ def clean_line(line, names):
     left_command = dict((key, command[key]) for key in command.keys()
                         if key[:5] == 'left_')
     right_command = dict((key, command[key]) for key in command.keys()
-                         if key[:6] == 'right_')
+                        if key[:6] == 'right_' and key != 'right_gripper')
     return (command, left_command, right_command, line)
 
 class Executor(object):
@@ -59,8 +59,8 @@ class Executor(object):
         self._limb_name = limb # string
         self._verbose = verbose # bool
         self._limb = baxter_interface.Limb(limb)
-        self._gripper = baxter_interface.Gripper(limb)
-        self._gripper.calibrate()
+        #self._gripper = baxter_interface.Gripper(limb)
+        #self._gripper.calibrate()
         ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
         self._iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         rospy.wait_for_service(ns, 5.0)
@@ -166,7 +166,7 @@ class Executor(object):
 
         cmd, lcmd, rcmd, values = clean_line(lines[1], keys)
         print("Performing Trajectory")
-        self.move_to_joint(lcmd)
+        self.move_to_joint(rcmd)
 
         start_time = rospy.get_time()
         step = 1
@@ -182,8 +182,8 @@ class Executor(object):
                 if rospy.is_shutdown():
                     print("\n Aborting - ROS shutdown")
                     return False
-                if len(lcmd):
-                    self.set_to_joint(lcmd)
+                if len(rcmd):
+                    self.set_to_joint(rcmd)
                 rate.sleep()
 
     def ik_trajectory(self, file_in, file_out, pose_start):

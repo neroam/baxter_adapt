@@ -16,7 +16,7 @@ from baxter_interface import CHECK_VERSION
 from executor import Executor
 
 def map_file(filename):
-    executor = Executor("left")
+    executor = Executor("right")
     traj = open(filename, 'r').readlines()
     #traj = executor.ik_trajectory(filename, filename + '_joints', executor.get_current_pose())
     executor.move_as_trajectory(traj)
